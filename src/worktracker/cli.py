@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from .database import Database
+from .homeassistant import generate_yaml_config
 from .mqtt_client import MQTTClient
 from .mqtt_config import create_default_config, load_config
 from .service import ServiceManager
@@ -349,6 +350,29 @@ class WorkTrackerCLI:
             client.disconnect()
             return 1
 
+    def mqtt_yaml(self) -> int:
+        """Generate Home Assistant YAML configuration.
+
+        Generates complete YAML configuration with hostname automatically filled in.
+        Output can be copied and pasted directly into Home Assistant's configuration.yaml.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        yaml_config = generate_yaml_config()
+
+        print("Home Assistant YAML Configuration:")
+        print("=" * 60)
+        print(yaml_config)
+        print("=" * 60)
+        print("\nInstructions:")
+        print("1. Copy the YAML configuration above")
+        print("2. Paste it into your Home Assistant configuration.yaml file")
+        print("3. Restart Home Assistant (or reload MQTT integration)")
+        print("4. Ensure WorkTracker MQTT publisher is running: worktracker mqtt start")
+
+        return 0
+
 
 def main() -> int:
     """Main entry point for worktracker CLI.
@@ -392,6 +416,7 @@ def main() -> int:
     mqtt_stop_parser = mqtt_subparsers.add_parser("stop", help="Stop MQTT publisher daemon")
     mqtt_status_parser = mqtt_subparsers.add_parser("status", help="Show MQTT configuration status")
     mqtt_publish_parser = mqtt_subparsers.add_parser("publish", help="Manually publish status (for testing)")
+    mqtt_yaml_parser = mqtt_subparsers.add_parser("yaml", help="Generate Home Assistant YAML configuration")
 
     args = parser.parse_args()
 
@@ -425,6 +450,8 @@ def main() -> int:
             return cli.mqtt_status()
         elif args.mqtt_command == "publish":
             return cli.mqtt_publish()
+        elif args.mqtt_command == "yaml":
+            return cli.mqtt_yaml()
         else:
             mqtt_parser.print_help()
             return 1

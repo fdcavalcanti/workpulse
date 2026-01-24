@@ -1,6 +1,6 @@
 # WorkTracker
 
-A Python-based tool for tracking daily working time using systemd login information. WorkTracker automatically monitors your active session and logs working time, excluding periods when your system is suspended, locked, or hibernated.
+A Python-based tool for tracking daily working time using systemd login information. WorkTracker automatically monitors your active session and logs working time, excluding periods when your system is suspended, locked, or hibernated. Also, this tool is able to sync the data to your Home Assistant using MQTT.
 
 ## Features
 
@@ -10,6 +10,7 @@ A Python-based tool for tracking daily working time using systemd login informat
 - **Systemd Integration**: Runs as a systemd user timer, updating every minute
 - **Simple CLI**: Easy-to-use command-line interface
 - **Lightweight**: Minimal dependencies, no external services required
+- **Home Assistant**: Integrates to Home Assistant using MQTT
 
 ## Requirements
 
@@ -23,14 +24,6 @@ A Python-based tool for tracking daily working time using systemd login informat
 
 ```bash
 pip install worktracker
-```
-
-### From Source
-
-```bash
-git clone <repository-url>
-cd worktimer
-pip install -e .
 ```
 
 ## Usage
@@ -49,37 +42,72 @@ This command will:
 - Enable and start the timer to begin tracking
 - The timer will automatically start when you log in
 
-### Check Status
-
 View current tracking status and today's summary:
 
 ```bash
 worktracker status
 ```
 
-This displays:
-- Timer installation status (installed, enabled, running)
-- Current session state (active/inactive)
-- Today's total active time (hours:minutes)
+If needed, you can uninstall:
 
-### Control the Timer
-
-**Start tracking:**
-```bash
-worktracker start
-```
-
-**Stop tracking:**
-```bash
-worktracker stop
-```
-
-**Uninstall:**
 ```bash
 worktracker uninstall
 ```
 
 This removes the systemd timer and service files. Note: The database files in `~/.worktracker/` are not removed automatically. To completely remove all data, manually delete the `~/.worktracker/` directory.
+
+
+## Home Assistant Integration
+
+WorkTracker can publish daily time tracking data to Home Assistant via MQTT, allowing you to monitor your working time directly in your Home Assistant dashboard.
+
+### Setup
+
+1. **Configure MQTT in WorkTracker:**
+
+   During installation, WorkTracker creates a default MQTT configuration file at `~/.worktracker/mqtt_config.toml`. Edit this file to set your MQTT broker details:
+
+   ```toml
+   broker = "192.168.1.100"  # Your MQTT broker IP address
+   port = 1883
+   username = ""  # Optional: MQTT username
+   password = ""  # Optional: MQTT password
+   topic_prefix = "worktracker"
+   update_interval = 60  # Publish updates every 60 seconds
+   ```
+
+2. **Generate Home Assistant YAML Configuration:**
+
+   ```bash
+   worktracker mqtt yaml
+   ```
+
+   This command generates the Home Assistant YAML configuration with your hostname automatically filled in.
+
+3. **Add Configuration to Home Assistant:**
+
+   - Copy the generated YAML configuration
+   - Paste it into your Home Assistant `configuration.yaml` file
+   - Restart Home Assistant or reload the MQTT integration
+
+4. **Start the MQTT Publisher:**
+
+   ```bash
+   worktracker mqtt start
+   ```
+
+   The publisher will run in the foreground. To run it as a background service, you can use `systemd` or a process manager.
+
+The integration creates a single sensor that displays your daily total active time formatted as hours and minutes (e.g., "2h 30m" or "45m"). The sensor updates automatically as WorkTracker publishes new data.
+
+### MQTT Commands
+
+- `worktracker mqtt start` - Start the MQTT publisher daemon
+- `worktracker mqtt stop` - Stop the MQTT publisher
+- `worktracker mqtt status` - Show MQTT configuration status
+- `worktracker mqtt publish` - Manually publish status (for testing)
+- `worktracker mqtt yaml` - Generate Home Assistant YAML configuration
+
 
 ## How It Works
 
@@ -94,128 +122,6 @@ The tracking is based on systemd login session state, which provides accurate in
 - Session activity (active/inactive)
 - Screen lock status
 - System power state
-
-### Database Structure
-
-The database stores daily totals in a simple schema:
-
-- **Table**: `daily_totals`
-- **Columns**:
-  - `date` (PRIMARY KEY): Date in YYYY-MM-DD format
-  - `total_seconds` (REAL): Total active time in seconds for that day
-
-The database is located at `~/.worktracker/worktracker.db`.
-
-## Development
-
-### Setup Development Environment
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd worktimer
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install in editable mode
-pip install -e .
-
-# Install development dependencies
-pip install pytest pytest-cov
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage report
-pytest --cov
-
-# Run specific test file
-pytest tests/test_database.py
-
-# Run with verbose output
-pytest -v
-```
-
-### Test Coverage
-
-The project maintains **87%+ test coverage** (excluding CLI module). Coverage reports are generated in HTML format in the `htmlcov/` directory.
-
-### Project Structure
-
-```
-worktimer/
-├── src/
-│   └── worktracker/
-│       ├── __init__.py
-│       ├── cli.py              # Command-line interface
-│       ├── database.py         # SQLite database operations
-│       ├── models.py           # Data models (SessionState, Session, DailyLog)
-│       ├── service.py          # Systemd timer/service management
-│       ├── state_checker.py   # User activity checking via loginctl
-│       └── tracker.py         # Core tracking logic
-├── tests/
-│   ├── test_database.py
-│   ├── test_models.py
-│   ├── test_service.py
-│   ├── test_state_checker.py
-│   └── test_tracker.py
-├── pyproject.toml
-├── .coveragerc
-└── README.md
-```
-
-## Troubleshooting
-
-### Timer Not Starting
-
-If the timer doesn't start automatically after installation:
-
-1. Check if systemd user services are enabled:
-   ```bash
-   systemctl --user status worktracker.timer
-   ```
-
-2. Manually start the timer:
-   ```bash
-   worktracker start
-   ```
-
-3. Check systemd logs:
-   ```bash
-   journalctl --user -u worktracker.service
-   ```
-
-### No Time Being Tracked
-
-If time isn't being logged:
-
-1. Verify your session is active:
-   ```bash
-   loginctl list-sessions
-   ```
-
-2. Check if the timer is running:
-   ```bash
-   worktracker status
-   ```
-
-3. Verify the database exists and is writable:
-   ```bash
-   ls -la ~/.worktracker/
-   ```
-
-### Permission Issues
-
-If you encounter permission errors:
-
-- Ensure you have write access to `~/.worktracker/`
-- Verify systemd user services are available (most Linux distributions have this enabled by default)
 
 ## Limitations
 
