@@ -9,6 +9,9 @@ description = "Track working time using systemd login information"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+dependencies = [
+    "paho-mqtt>=2.0.0",
+]
 authors = [
     {name = "WorkTracker Contributors"}
 ]

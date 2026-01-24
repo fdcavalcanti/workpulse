@@ -1,9 +1,14 @@
 """Command-line interface for worktracker."""
 
 import argparse
+import signal
 import sys
+import time
+from pathlib import Path
 
 from .database import Database
+from .mqtt_client import MQTTClient
+from .mqtt_config import create_default_config, load_config
 from .service import ServiceManager
 from .tracker import WorkTracker
 
@@ -32,6 +37,14 @@ class WorkTrackerCLI:
         except Exception as e:
             print(f"ERROR: Failed to initialize database: {e}")
             return 1
+
+        # Create default MQTT config file if it doesn't exist
+        try:
+            config_path = create_default_config()
+            print(f"✓ MQTT configuration file created: {config_path}")
+            print("  NOTE: Please edit the file to set your MQTT broker IP address")
+        except OSError as e:
+            print(f"WARNING: Failed to create MQTT configuration file: {e}")
 
         # Install systemd timer
         if not self.service_manager.install_timer():
@@ -224,6 +237,118 @@ class WorkTrackerCLI:
             logging.error(f"Update error: {e}", exc_info=True)
             return 1
 
+    def mqtt_start(self) -> int:
+        """Start the MQTT publisher daemon.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        print("Starting MQTT publisher...")
+
+        try:
+            config = load_config()
+        except FileNotFoundError as e:
+            print(f"ERROR: {e}")
+            return 1
+        except ValueError as e:
+            print(f"ERROR: Invalid configuration: {e}")
+            return 1
+
+        tracker = WorkTracker()
+        client = MQTTClient(config, tracker)
+
+        if not client.start():
+            print("ERROR: Failed to start MQTT publisher")
+            return 1
+
+        print("✓ MQTT publisher started")
+        print("Press Ctrl+C to stop...")
+
+        # Handle graceful shutdown
+        def signal_handler(sig, frame):
+            print("\nStopping MQTT publisher...")
+            client.stop()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        # Keep running until interrupted
+        try:
+            while client.is_running():
+                time.sleep(1)
+        except KeyboardInterrupt:
+            signal_handler(None, None)
+
+        return 0
+
+    def mqtt_stop(self) -> int:
+        """Stop the MQTT publisher daemon.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        print("Stopping MQTT publisher...")
+        print("NOTE: If MQTT publisher is running in another terminal, use Ctrl+C there.")
+        print("      This command is for future systemd service integration.")
+        return 0
+
+    def mqtt_status(self) -> int:
+        """Show MQTT publisher status.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        try:
+            config = load_config()
+            print("MQTT Configuration:")
+            print(f"  Broker: {config.broker_ip}:{config.port}")
+            print(f"  Topic prefix: {config.topic_prefix}")
+            print(f"  Update interval: {config.update_interval}s")
+            print(f"  QoS: {config.qos}")
+        except FileNotFoundError as e:
+            print(f"ERROR: {e}")
+            return 1
+        except ValueError as e:
+            print(f"ERROR: Invalid configuration: {e}")
+            return 1
+
+        print("\nNOTE: Use 'worktracker mqtt start' to run the publisher.")
+        return 0
+
+    def mqtt_publish(self) -> int:
+        """Manually publish current status to MQTT broker (for testing).
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        print("Publishing status to MQTT broker...")
+
+        try:
+            config = load_config()
+        except FileNotFoundError as e:
+            print(f"ERROR: {e}")
+            return 1
+        except ValueError as e:
+            print(f"ERROR: Invalid configuration: {e}")
+            return 1
+
+        tracker = WorkTracker()
+        client = MQTTClient(config, tracker)
+
+        if not client.connect():
+            print("ERROR: Failed to connect to MQTT broker")
+            return 1
+
+        if client.publish_status():
+            print("✓ Status published successfully")
+            client.disconnect()
+            return 0
+        else:
+            print("ERROR: Failed to publish status")
+            client.disconnect()
+            return 1
+
 
 def main() -> int:
     """Main entry point for worktracker CLI.
@@ -259,6 +384,15 @@ def main() -> int:
         "update", help=argparse.SUPPRESS
     )
 
+    # MQTT commands
+    mqtt_parser = subparsers.add_parser("mqtt", help="MQTT publisher commands")
+    mqtt_subparsers = mqtt_parser.add_subparsers(dest="mqtt_command", help="MQTT command")
+
+    mqtt_start_parser = mqtt_subparsers.add_parser("start", help="Start MQTT publisher daemon")
+    mqtt_stop_parser = mqtt_subparsers.add_parser("stop", help="Stop MQTT publisher daemon")
+    mqtt_status_parser = mqtt_subparsers.add_parser("status", help="Show MQTT configuration status")
+    mqtt_publish_parser = mqtt_subparsers.add_parser("publish", help="Manually publish status (for testing)")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -279,6 +413,21 @@ def main() -> int:
         return cli.status()
     elif args.command == "update":
         return cli.update()
+    elif args.command == "mqtt":
+        if not args.mqtt_command:
+            mqtt_parser.print_help()
+            return 1
+        elif args.mqtt_command == "start":
+            return cli.mqtt_start()
+        elif args.mqtt_command == "stop":
+            return cli.mqtt_stop()
+        elif args.mqtt_command == "status":
+            return cli.mqtt_status()
+        elif args.mqtt_command == "publish":
+            return cli.mqtt_publish()
+        else:
+            mqtt_parser.print_help()
+            return 1
     else:
         parser.print_help()
         return 1
