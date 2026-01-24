@@ -238,8 +238,70 @@ class WorkTrackerCLI:
             logging.error(f"Update error: {e}", exc_info=True)
             return 1
 
-    def mqtt_start(self) -> int:
+    def mqtt_install(self) -> int:
+        """Install and set up MQTT publisher systemd service.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        print("Installing MQTT publisher service...")
+
+        # Create default MQTT config file if it doesn't exist
+        try:
+            config_path = create_default_config()
+            print(f"✓ MQTT configuration file created: {config_path}")
+            print("  NOTE: Please edit the file to set your MQTT broker IP address")
+        except OSError as e:
+            print(f"WARNING: Failed to create MQTT configuration file: {e}")
+
+        # Install service if not already installed
+        if not self.service_manager.is_mqtt_service_installed():
+            print("Installing MQTT service unit...")
+            if not self.service_manager.install_mqtt_service():
+                print("ERROR: Failed to install MQTT service")
+                return 1
+            print("✓ MQTT service installed")
+
+            # Reload daemon
+            if not self.service_manager.reload_daemon():
+                print("WARNING: Failed to reload systemd daemon")
+            else:
+                print("✓ Systemd daemon reloaded")
+        else:
+            print("✓ MQTT service already installed")
+
+        # Enable service
+        if not self.service_manager.enable_mqtt_service():
+            print("ERROR: Failed to enable MQTT service")
+            return 1
+        print("✓ MQTT service enabled")
+
+        # Start service
+        if not self.service_manager.start_mqtt_service():
+            print("ERROR: Failed to start MQTT service")
+            return 1
+        print("✓ MQTT service started")
+
+        print("\nMQTT publisher service has been installed and started successfully!")
+        print("Use 'worktracker mqtt status' to check service status.")
+        return 0
+
+    def mqtt_start(self, as_service: bool = False) -> int:
         """Start the MQTT publisher daemon.
+
+        Args:
+            as_service: If True, start as systemd service. If False, run in foreground.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        if as_service:
+            return self._mqtt_start_service()
+        else:
+            return self._mqtt_start_foreground()
+
+    def _mqtt_start_foreground(self) -> int:
+        """Start MQTT publisher in foreground.
 
         Returns:
             Exit code (0 for success, non-zero for failure)
@@ -283,15 +345,106 @@ class WorkTrackerCLI:
 
         return 0
 
-    def mqtt_stop(self) -> int:
-        """Stop the MQTT publisher daemon.
+    def _mqtt_start_service(self) -> int:
+        """Start MQTT publisher as systemd service.
 
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        print("Stopping MQTT publisher...")
-        print("NOTE: If MQTT publisher is running in another terminal, use Ctrl+C there.")
-        print("      This command is for future systemd service integration.")
+        print("Starting MQTT publisher as systemd service...")
+
+        # Install service if not already installed
+        if not self.service_manager.is_mqtt_service_installed():
+            print("Installing MQTT service...")
+            if not self.service_manager.install_mqtt_service():
+                print("ERROR: Failed to install MQTT service")
+                return 1
+            print("✓ MQTT service installed")
+
+            # Reload daemon
+            if not self.service_manager.reload_daemon():
+                print("WARNING: Failed to reload systemd daemon")
+            else:
+                print("✓ Systemd daemon reloaded")
+
+        # Enable service
+        if not self.service_manager.enable_mqtt_service():
+            print("ERROR: Failed to enable MQTT service")
+            return 1
+        print("✓ MQTT service enabled")
+
+        # Start service
+        if not self.service_manager.start_mqtt_service():
+            print("ERROR: Failed to start MQTT service")
+            return 1
+        print("✓ MQTT service started")
+
+        print("\nMQTT publisher service is now running.")
+        print("Use 'worktracker mqtt status' to check service status.")
+        return 0
+
+
+    def mqtt_stop(self) -> int:
+        """Stop the MQTT publisher service.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        print("Stopping MQTT publisher service...")
+
+        if not self.service_manager.is_mqtt_service_installed():
+            print("ERROR: MQTT service is not installed")
+            return 1
+
+        if not self.service_manager.stop_mqtt_service():
+            print("ERROR: Failed to stop MQTT service")
+            return 1
+
+        if not self.service_manager.disable_mqtt_service():
+            print("WARNING: Failed to disable MQTT service")
+        else:
+            print("✓ MQTT service stopped and disabled")
+
+        print("MQTT publisher service has been stopped.")
+        return 0
+
+    def mqtt_uninstall(self) -> int:
+        """Uninstall the MQTT publisher service.
+
+        Returns:
+            Exit code (0 for success, non-zero for failure)
+        """
+        print("Uninstalling MQTT publisher service...")
+
+        if not self.service_manager.is_mqtt_service_installed():
+            print("MQTT service is not installed. Nothing to uninstall.")
+            return 0
+
+        # Stop and disable service first
+        if self.service_manager.is_mqtt_service_running():
+            if not self.service_manager.stop_mqtt_service():
+                print("WARNING: Failed to stop MQTT service")
+            else:
+                print("✓ MQTT service stopped")
+
+        if self.service_manager.is_mqtt_service_enabled():
+            if not self.service_manager.disable_mqtt_service():
+                print("WARNING: Failed to disable MQTT service")
+            else:
+                print("✓ MQTT service disabled")
+
+        # Remove service file
+        if not self.service_manager.uninstall_mqtt_service():
+            print("ERROR: Failed to uninstall MQTT service")
+            return 1
+
+        # Reload daemon
+        if not self.service_manager.reload_daemon():
+            print("WARNING: Failed to reload systemd daemon")
+        else:
+            print("✓ Systemd daemon reloaded")
+
+        print("MQTT publisher service has been uninstalled successfully!")
         return 0
 
     def mqtt_status(self) -> int:
@@ -314,7 +467,22 @@ class WorkTrackerCLI:
             print(f"ERROR: Invalid configuration: {e}")
             return 1
 
-        print("\nNOTE: Use 'worktracker mqtt start' to run the publisher.")
+        # Check MQTT service status
+        print("\nMQTT Service Status:")
+        if self.service_manager.is_mqtt_service_installed():
+            is_running = self.service_manager.is_mqtt_service_running()
+            is_enabled = self.service_manager.is_mqtt_service_enabled()
+            print(f"  Installed: Yes")
+            print(f"  Enabled: {'Yes' if is_enabled else 'No'}")
+            print(f"  Running: {'Yes' if is_running else 'No'}")
+        else:
+            print(f"  Installed: No")
+            print(f"  Enabled: No")
+            print(f"  Running: No")
+
+        print("\nUsage:")
+        print("  'worktracker mqtt start service' - Start MQTT publisher as service")
+        print("  'worktracker mqtt stop' - Stop MQTT publisher service")
         return 0
 
     def mqtt_publish(self) -> int:
@@ -402,19 +570,24 @@ def main() -> int:
     # Status command
     status_parser = subparsers.add_parser("status", help="Show current tracking status")
 
-    # Update command (internal, called by systemd timer)
-    # Hidden from help - users shouldn't need to call this directly
+    # Update command (called by systemd timer)
     update_parser = subparsers.add_parser(
-        "update", help=argparse.SUPPRESS
+        "update", help="Updates the tracked time (called by systemd timer)"
     )
 
     # MQTT commands
     mqtt_parser = subparsers.add_parser("mqtt", help="MQTT publisher commands")
     mqtt_subparsers = mqtt_parser.add_subparsers(dest="mqtt_command", help="MQTT command")
 
-    mqtt_start_parser = mqtt_subparsers.add_parser("start", help="Start MQTT publisher daemon")
-    mqtt_stop_parser = mqtt_subparsers.add_parser("stop", help="Stop MQTT publisher daemon")
-    mqtt_status_parser = mqtt_subparsers.add_parser("status", help="Show MQTT configuration status")
+    mqtt_install_parser = mqtt_subparsers.add_parser("install", help="Install and set up MQTT publisher service")
+    mqtt_start_parser = mqtt_subparsers.add_parser("start", help="Start MQTT publisher (specify 'local' or 'service')")
+    mqtt_start_subparsers = mqtt_start_parser.add_subparsers(dest="mqtt_start_mode", help="Start mode (required)", required=True)
+    mqtt_start_subparsers.add_parser("local", help="Run MQTT publisher in foreground (local terminal)")
+    mqtt_start_subparsers.add_parser("service", help="Run MQTT publisher as systemd service (background)")
+    
+    mqtt_stop_parser = mqtt_subparsers.add_parser("stop", help="Stop MQTT publisher service")
+    mqtt_uninstall_parser = mqtt_subparsers.add_parser("uninstall", help="Uninstall MQTT publisher service")
+    mqtt_status_parser = mqtt_subparsers.add_parser("status", help="Show MQTT configuration and service status")
     mqtt_publish_parser = mqtt_subparsers.add_parser("publish", help="Manually publish status (for testing)")
     mqtt_yaml_parser = mqtt_subparsers.add_parser("yaml", help="Generate Home Assistant YAML configuration")
 
@@ -442,10 +615,15 @@ def main() -> int:
         if not args.mqtt_command:
             mqtt_parser.print_help()
             return 1
+        elif args.mqtt_command == "install":
+            return cli.mqtt_install()
         elif args.mqtt_command == "start":
-            return cli.mqtt_start()
+            as_service = args.mqtt_start_mode == "service"
+            return cli.mqtt_start(as_service=as_service)
         elif args.mqtt_command == "stop":
             return cli.mqtt_stop()
+        elif args.mqtt_command == "uninstall":
+            return cli.mqtt_uninstall()
         elif args.mqtt_command == "status":
             return cli.mqtt_status()
         elif args.mqtt_command == "publish":

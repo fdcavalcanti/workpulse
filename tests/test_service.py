@@ -25,6 +25,7 @@ class TestServiceManager:
         assert service_manager.systemd_user_dir == expected_dir
         assert service_manager.timer_path == expected_dir / "worktracker.timer"
         assert service_manager.service_path == expected_dir / "worktracker.service"
+        assert service_manager.mqtt_service_path == expected_dir / "worktracker-mqtt.service"
 
     @patch("worktracker.service.shutil.which")
     def test_get_python_executable_finds_python3(self, mock_which, service_manager):
@@ -246,3 +247,192 @@ class TestServiceManager:
         mock_subprocess.return_value = mock_result
 
         assert service_manager.reload_daemon() is False
+
+    # MQTT Service Tests
+    @patch("worktracker.service.shutil.which")
+    def test_generate_mqtt_service_unit_with_worktracker_in_path(
+        self, mock_which, service_manager
+    ):
+        """Test generate_mqtt_service_unit when worktracker is in PATH."""
+        mock_which.side_effect = lambda cmd: (
+            "/usr/local/bin/worktracker" if cmd == "worktracker" else None
+        )
+        content = service_manager.generate_mqtt_service_unit()
+        assert "[Unit]" in content
+        assert "WorkTracker MQTT Publisher" in content
+        assert "ExecStart=/usr/local/bin/worktracker mqtt start" in content
+        assert "Type=simple" in content
+        assert "Restart=on-failure" in content
+
+    @patch("worktracker.service.shutil.which")
+    def test_generate_mqtt_service_unit_fallback_to_python(
+        self, mock_which, service_manager
+    ):
+        """Test generate_mqtt_service_unit falls back to python -m."""
+        mock_which.return_value = None
+        service_manager._get_python_executable = MagicMock(return_value="/usr/bin/python3")
+        content = service_manager.generate_mqtt_service_unit()
+        assert "python3 -m worktracker mqtt start" in content
+
+    def test_install_mqtt_service(self, service_manager, tmp_path):
+        """Test install_mqtt_service creates service file."""
+        assert service_manager.install_mqtt_service() is True
+        assert service_manager.mqtt_service_path.exists()
+        content = service_manager.mqtt_service_path.read_text()
+        assert "[Unit]" in content
+        assert "[Service]" in content
+
+    def test_uninstall_mqtt_service(self, service_manager):
+        """Test uninstall_mqtt_service removes service file."""
+        service_manager.mqtt_service_path.parent.mkdir(parents=True, exist_ok=True)
+        service_manager.mqtt_service_path.write_text("[Unit]\nDescription=Test")
+        assert service_manager.mqtt_service_path.exists()
+        with patch.object(service_manager, "stop_mqtt_service", return_value=True):
+            with patch.object(service_manager, "disable_mqtt_service", return_value=True):
+                assert service_manager.uninstall_mqtt_service() is True
+        assert not service_manager.mqtt_service_path.exists()
+
+    @patch("worktracker.service.subprocess.run")
+    def test_enable_mqtt_service_success(self, mock_subprocess, service_manager):
+        """Test enable_mqtt_service succeeds."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.enable_mqtt_service() is True
+        mock_subprocess.assert_called_once_with(
+            ["systemctl", "--user", "enable", "worktracker-mqtt.service"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    @patch("worktracker.service.subprocess.run")
+    def test_enable_mqtt_service_failure(self, mock_subprocess, service_manager):
+        """Test enable_mqtt_service fails."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.enable_mqtt_service() is False
+
+    @patch("worktracker.service.subprocess.run")
+    def test_disable_mqtt_service_success(self, mock_subprocess, service_manager):
+        """Test disable_mqtt_service succeeds."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.disable_mqtt_service() is True
+
+    @patch("worktracker.service.subprocess.run")
+    def test_disable_mqtt_service_failure(self, mock_subprocess, service_manager):
+        """Test disable_mqtt_service fails."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.disable_mqtt_service() is False
+
+    @patch("worktracker.service.subprocess.run")
+    def test_start_mqtt_service_success(self, mock_subprocess, service_manager):
+        """Test start_mqtt_service succeeds."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.start_mqtt_service() is True
+
+    @patch("worktracker.service.subprocess.run")
+    def test_start_mqtt_service_failure(self, mock_subprocess, service_manager):
+        """Test start_mqtt_service fails."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.start_mqtt_service() is False
+
+    @patch("worktracker.service.subprocess.run")
+    def test_stop_mqtt_service_success(self, mock_subprocess, service_manager):
+        """Test stop_mqtt_service succeeds."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.stop_mqtt_service() is True
+
+    @patch("worktracker.service.subprocess.run")
+    def test_stop_mqtt_service_failure(self, mock_subprocess, service_manager):
+        """Test stop_mqtt_service fails."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.stop_mqtt_service() is False
+
+    def test_is_mqtt_service_installed_true(self, service_manager):
+        """Test is_mqtt_service_installed returns True when file exists."""
+        service_manager.mqtt_service_path.parent.mkdir(parents=True, exist_ok=True)
+        service_manager.mqtt_service_path.write_text("[Unit]\nDescription=Test")
+        assert service_manager.is_mqtt_service_installed() is True
+
+    def test_is_mqtt_service_installed_false(self, service_manager):
+        """Test is_mqtt_service_installed returns False when file doesn't exist."""
+        assert service_manager.is_mqtt_service_installed() is False
+
+    @patch("worktracker.service.subprocess.run")
+    def test_is_mqtt_service_enabled_true(self, mock_subprocess, service_manager):
+        """Test is_mqtt_service_enabled returns True when enabled."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "enabled\n"
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.is_mqtt_service_enabled() is True
+
+    @patch("worktracker.service.subprocess.run")
+    def test_is_mqtt_service_enabled_false(self, mock_subprocess, service_manager):
+        """Test is_mqtt_service_enabled returns False when not enabled."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.is_mqtt_service_enabled() is False
+
+    @patch("worktracker.service.subprocess.run")
+    def test_is_mqtt_service_running_true(self, mock_subprocess, service_manager):
+        """Test is_mqtt_service_running returns True when active."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "active\n"
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.is_mqtt_service_running() is True
+
+    @patch("worktracker.service.subprocess.run")
+    def test_is_mqtt_service_running_false(self, mock_subprocess, service_manager):
+        """Test is_mqtt_service_running returns False when not active."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.is_mqtt_service_running() is False
+
+    @patch("worktracker.service.subprocess.run")
+    def test_get_mqtt_service_status_active(self, mock_subprocess, service_manager):
+        """Test get_mqtt_service_status returns active."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "active\n"
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.get_mqtt_service_status() == "active"
+
+    @patch("worktracker.service.subprocess.run")
+    def test_get_mqtt_service_status_inactive(self, mock_subprocess, service_manager):
+        """Test get_mqtt_service_status returns inactive."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_subprocess.return_value = mock_result
+
+        assert service_manager.get_mqtt_service_status() == "inactive"
