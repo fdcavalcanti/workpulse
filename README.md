@@ -12,6 +12,18 @@ A Python-based tool for tracking daily working time using systemd login informat
 - **Lightweight**: Minimal dependencies, no external services required
 - **Home Assistant**: Integrates to Home Assistant using MQTT
 
+## AI Disclaimer
+
+This project has been developed using a technique known as "vibe coding".
+I have actually written less than 1% of the lines on this repository, as my work was
+giving instructions to the AI agent. To be honest, this disclaimer was written by myself.
+
+However, I do have large experience in Python and Linux, so everything was reviewed
+and the "AI slop" is reduced due to the proper and detailed instructions I provided.
+
+There are few weird implementations but I have decided to keep them in since it is
+well documented and does not affect performance (which is not a problem here).
+
 ## Requirements
 
 - **Python 3.10+**
@@ -91,21 +103,31 @@ WorkTracker can publish daily time tracking data to Home Assistant via MQTT, all
    - Restart Home Assistant or reload the MQTT integration
 
 4. **Start the MQTT Publisher:**
+   To run the publisher as a service:
 
    ```bash
-   worktracker mqtt start
+   worktracker mqtt start service
    ```
 
-   The publisher will run in the foreground. To run it as a background service, you can use `systemd` or a process manager.
+   This should be done only once and it should work automatically on next reboots.
+   Or, to run it in the terminal:
+
+   ```bash
+   worktracker mqtt start local
+   ```
+
+   This allows you to simply CTRL-C and the publisher stops.
+
 
 The integration creates a single sensor that displays your daily total active time formatted as hours and minutes (e.g., "2h 30m" or "45m"). The sensor updates automatically as WorkTracker publishes new data.
 
 ### MQTT Commands
 
-- `worktracker mqtt start` - Start the MQTT publisher daemon
+- `worktracker mqtt start <mode>` - Start the MQTT publisher daemon
 - `worktracker mqtt stop` - Stop the MQTT publisher
 - `worktracker mqtt status` - Show MQTT configuration status
 - `worktracker mqtt publish` - Manually publish status (for testing)
+- `worktracker mqtt uninstall` - Disable the service and delete the publisher file.
 - `worktracker mqtt yaml` - Generate Home Assistant YAML configuration
 
 
