@@ -1,7 +1,7 @@
 """Database operations for storing time tracking data."""
 
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
@@ -57,10 +57,23 @@ class Database:
             """
             CREATE TABLE IF NOT EXISTS daily_totals (
                 date TEXT PRIMARY KEY,
-                total_seconds REAL NOT NULL DEFAULT 0
+                total_seconds REAL NOT NULL DEFAULT 0,
+                last_update TEXT
             )
         """
         )
+
+        # Migrate existing databases: add last_update column if it doesn't exist
+        try:
+            cursor.execute(
+                """
+                ALTER TABLE daily_totals
+                ADD COLUMN last_update TEXT
+            """
+            )
+        except sqlite3.OperationalError:
+            # Column already exists, ignore
+            pass
 
         conn.commit()
 
@@ -69,12 +82,14 @@ class Database:
 
         This method adds time to today's total. If no record exists for today,
         it creates one. Otherwise, it updates the existing record.
+        The last_update timestamp is set to the current time.
 
         Args:
             seconds: Number of seconds to add (typically 60 for 1 minute)
         """
         today = date.today()
         date_str = today.isoformat()
+        now = datetime.now().isoformat()
 
         conn = self.connect()
         cursor = conn.cursor()
@@ -83,20 +98,20 @@ class Database:
         cursor.execute(
             """
             UPDATE daily_totals
-            SET total_seconds = total_seconds + ?
+            SET total_seconds = total_seconds + ?, last_update = ?
             WHERE date = ?
         """,
-            (seconds, date_str),
+            (seconds, now, date_str),
         )
 
         # If no row was updated, insert a new one
         if cursor.rowcount == 0:
             cursor.execute(
                 """
-                INSERT INTO daily_totals (date, total_seconds)
-                VALUES (?, ?)
+                INSERT INTO daily_totals (date, total_seconds, last_update)
+                VALUES (?, ?, ?)
             """,
-                (date_str, seconds),
+                (date_str, seconds, now),
             )
 
         conn.commit()
@@ -117,7 +132,7 @@ class Database:
 
         cursor.execute(
             """
-            SELECT total_seconds
+            SELECT total_seconds, last_update
             FROM daily_totals
             WHERE date = ?
         """,
@@ -126,10 +141,19 @@ class Database:
 
         row = cursor.fetchone()
         total_seconds = float(row["total_seconds"]) if row else 0.0
+        
+        last_update = None
+        if row and row["last_update"]:
+            try:
+                last_update = datetime.fromisoformat(row["last_update"])
+            except (ValueError, TypeError):
+                # Handle invalid timestamp format gracefully
+                last_update = None
 
         return DailyLog(
             date=log_date,
             total_active_time=total_seconds,
+            last_update=last_update,
         )
 
     def get_today_log(self) -> DailyLog:

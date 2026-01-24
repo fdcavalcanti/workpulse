@@ -192,7 +192,9 @@ class WorkTrackerCLI:
             print("\nToday's summary:")
             hours = int(today_log.total_active_time // 3600)
             minutes = int((today_log.total_active_time % 3600) // 60)
+            last_update = today_log.last_update.strftime("%H:%M")
             print(f"  Total active time: {hours:02d}:{minutes:02d}")
+            print(f"  Last update: {last_update}")
 
         except Exception as e:
             print(f"\nERROR: Failed to get status: {e}")

@@ -76,6 +76,7 @@ class DailyLog:
 
     date: date
     total_active_time: float  # Total active time in seconds
+    last_update: Optional[datetime] = None  # Timestamp of last update
 
     @property
     def total_active_hours(self) -> float:

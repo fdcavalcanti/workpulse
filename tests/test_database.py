@@ -1,8 +1,9 @@
 """Tests for database module."""
 
 import tempfile
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
+from time import sleep
 
 import pytest
 
@@ -99,6 +100,59 @@ class TestDatabase:
         assert row is not None
         assert row["total_seconds"] == 300.0  # 5 minutes = 300 seconds
 
+    def test_increment_daily_time_sets_last_update(self, temp_db):
+        """Test that increment_daily_time sets last_update timestamp."""
+        # Increment time
+        before = datetime.now()
+        temp_db.increment_daily_time(60.0)
+        after = datetime.now()
+
+        # Verify last_update is set
+        conn = temp_db.connect()
+        cursor = conn.cursor()
+        today = date.today().isoformat()
+        cursor.execute(
+            "SELECT last_update FROM daily_totals WHERE date = ?", (today,)
+        )
+        row = cursor.fetchone()
+        assert row is not None
+        assert row["last_update"] is not None
+        
+        # Parse timestamp and verify it's within expected range
+        last_update = datetime.fromisoformat(row["last_update"])
+        assert before <= last_update <= after
+
+    def test_increment_daily_time_updates_last_update(self, temp_db):
+        """Test that subsequent increments update last_update timestamp."""
+        # First increment
+        temp_db.increment_daily_time(60.0)
+        
+        # Get first timestamp
+        conn = temp_db.connect()
+        cursor = conn.cursor()
+        today = date.today().isoformat()
+        cursor.execute(
+            "SELECT last_update FROM daily_totals WHERE date = ?", (today,)
+        )
+        first_update = datetime.fromisoformat(cursor.fetchone()["last_update"])
+        
+        # Wait a bit to ensure different timestamp
+        sleep(0.1)
+        
+        # Second increment
+        before = datetime.now()
+        temp_db.increment_daily_time(60.0)
+        after = datetime.now()
+        
+        # Verify last_update was updated
+        cursor.execute(
+            "SELECT last_update FROM daily_totals WHERE date = ?", (today,)
+        )
+        second_update = datetime.fromisoformat(cursor.fetchone()["last_update"])
+        
+        assert second_update > first_update
+        assert before <= second_update <= after
+
     def test_get_daily_log_existing_date(self, temp_db):
         """Test getting daily log for a date with data."""
         log_date = date(2024, 1, 1)
@@ -117,6 +171,7 @@ class TestDatabase:
 
         assert daily_log.date == log_date
         assert daily_log.total_active_time == 3600.0
+        assert daily_log.last_update is None  # No last_update set for old data
 
     def test_get_daily_log_empty_date(self, temp_db):
         """Test getting daily log for a date with no data."""
@@ -126,6 +181,7 @@ class TestDatabase:
 
         assert daily_log.date == log_date
         assert daily_log.total_active_time == 0.0
+        assert daily_log.last_update is None
 
     def test_get_today_log(self, temp_db):
         """Test getting today's log."""
@@ -138,6 +194,8 @@ class TestDatabase:
 
         assert daily_log.date == today
         assert daily_log.total_active_time == 1800.0
+        assert daily_log.last_update is not None
+        assert isinstance(daily_log.last_update, datetime)
 
     def test_get_today_log_empty(self, temp_db):
         """Test getting today's log when no data exists."""
@@ -147,6 +205,7 @@ class TestDatabase:
 
         assert daily_log.date == today
         assert daily_log.total_active_time == 0.0
+        assert daily_log.last_update is None
 
     def test_increment_and_get_daily_log(self, temp_db):
         """Test that increment and get work together."""
