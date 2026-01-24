@@ -54,6 +54,7 @@ omit = [
     "*/tests/*",
     "*/test_*.py",
     "*/cli.py",
+    "*/homeassistant.py",
 ]
 
 [tool.coverage.report]

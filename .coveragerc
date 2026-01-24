@@ -5,6 +5,7 @@ omit =
     */test_*.py
     */__pycache__/*
     */cli.py
+    */homeassistant.py
 
 [report]
 exclude_lines =
