@@ -1,0 +1,273 @@
+"""Systemd timer management for worktracker."""
+
+import shutil
+import subprocess
+from pathlib import Path
+from typing import Optional
+
+
+class ServiceManager:
+    """Manages systemd user timer installation and control."""
+
+    TIMER_NAME = "worktracker.timer"
+    SERVICE_NAME = "worktracker.service"
+    SERVICE_DESCRIPTION = "WorkTracker - Track working time using systemd timer"
+
+    def __init__(self) -> None:
+        """Initialize the service manager."""
+        self.systemd_user_dir = Path.home() / ".config" / "systemd" / "user"
+        self.timer_path = self.systemd_user_dir / self.TIMER_NAME
+        self.service_path = self.systemd_user_dir / self.SERVICE_NAME
+
+    def _get_python_executable(self) -> str:
+        """Get the Python executable path.
+
+        Returns:
+            Path to Python executable
+        """
+        return shutil.which("python3") or shutil.which("python") or "python3"
+
+    def _get_worktracker_command(self) -> str:
+        """Get the worktracker command to run.
+
+        Returns:
+            Command string to run worktracker update
+        """
+        python = self._get_python_executable()
+        # Try to find worktracker in PATH first
+        worktracker_cmd = shutil.which("worktracker")
+        if worktracker_cmd:
+            return f"{worktracker_cmd} update"
+
+        # Fallback to python -m worktracker
+        return f"{python} -m worktracker update"
+
+    def generate_service_unit(self) -> str:
+        """Generate systemd user service unit file content.
+
+        Returns:
+            Service unit file content as string
+        """
+        command = self._get_worktracker_command()
+
+        unit_content = f"""[Unit]
+Description={self.SERVICE_DESCRIPTION}
+
+[Service]
+Type=oneshot
+ExecStart={command}
+StandardOutput=journal
+StandardError=journal
+"""
+        return unit_content
+
+    def generate_timer_unit(self) -> str:
+        """Generate systemd user timer unit file content.
+
+        Returns:
+            Timer unit file content as string
+        """
+        unit_content = f"""[Unit]
+Description=WorkTracker Timer - Update working time every minute
+Requires={self.SERVICE_NAME}
+
+[Timer]
+OnCalendar=*:0/1
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
+"""
+        return unit_content
+
+    def install_timer(self) -> bool:
+        """Install the systemd user timer and service.
+
+        Returns:
+            True if installation succeeded, False otherwise
+        """
+        try:
+            # Create systemd user directory if it doesn't exist
+            self.systemd_user_dir.mkdir(parents=True, exist_ok=True)
+
+            # Generate and write service unit
+            service_content = self.generate_service_unit()
+            self.service_path.write_text(service_content)
+            self.service_path.chmod(0o644)
+
+            # Generate and write timer unit
+            timer_content = self.generate_timer_unit()
+            self.timer_path.write_text(timer_content)
+            self.timer_path.chmod(0o644)
+
+            return True
+        except Exception as e:
+            print(f"Error installing timer: {e}")
+            return False
+
+    def uninstall_timer(self) -> bool:
+        """Uninstall the systemd user timer and service.
+
+        Returns:
+            True if uninstallation succeeded, False otherwise
+        """
+        try:
+            # Stop and disable first
+            self.stop_timer()
+            self.disable_timer()
+
+            # Remove timer file
+            if self.timer_path.exists():
+                self.timer_path.unlink()
+
+            # Remove service file
+            if self.service_path.exists():
+                self.service_path.unlink()
+
+            return True
+        except Exception as e:
+            print(f"Error uninstalling timer: {e}")
+            return False
+
+    def enable_timer(self) -> bool:
+        """Enable the systemd user timer.
+
+        Returns:
+            True if enabling succeeded, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "enable", self.TIMER_NAME],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error enabling timer: {e}")
+            return False
+
+    def disable_timer(self) -> bool:
+        """Disable the systemd user timer.
+
+        Returns:
+            True if disabling succeeded, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "disable", self.TIMER_NAME],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error disabling timer: {e}")
+            return False
+
+    def start_timer(self) -> bool:
+        """Start the systemd user timer.
+
+        Returns:
+            True if starting succeeded, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "start", self.TIMER_NAME],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error starting timer: {e}")
+            return False
+
+    def stop_timer(self) -> bool:
+        """Stop the systemd user timer.
+
+        Returns:
+            True if stopping succeeded, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "stop", self.TIMER_NAME],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error stopping timer: {e}")
+            return False
+
+    def get_timer_status(self) -> Optional[str]:
+        """Get the status of the systemd user timer.
+
+        Returns:
+            Status string if available, None otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "is-active", self.TIMER_NAME],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+            return "inactive"
+        except Exception:
+            return None
+
+    def is_timer_installed(self) -> bool:
+        """Check if the timer is installed.
+
+        Returns:
+            True if timer file exists, False otherwise
+        """
+        return self.timer_path.exists()
+
+    def is_timer_enabled(self) -> bool:
+        """Check if the timer is enabled.
+
+        Returns:
+            True if timer is enabled, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "is-enabled", self.TIMER_NAME],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return result.returncode == 0 and "enabled" in result.stdout
+        except Exception:
+            return False
+
+    def is_timer_running(self) -> bool:
+        """Check if the timer is currently running.
+
+        Returns:
+            True if timer is active, False otherwise
+        """
+        status = self.get_timer_status()
+        return status == "active"
+
+    def reload_daemon(self) -> bool:
+        """Reload systemd daemon to pick up timer changes.
+
+        Returns:
+            True if reload succeeded, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "daemon-reload"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error reloading daemon: {e}")
+            return False
