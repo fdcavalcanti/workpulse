@@ -26,14 +26,20 @@ classifiers = [
     "Topic :: Office/Business",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
 [project.scripts]
 worktracker = "worktracker.cli:main"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["worktracker"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
