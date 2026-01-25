@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Office/Business",
 ]
+urls = {Homepage = "https://pypi.org/project/workpulse/", Repository = "https://github.com/fdcavalcanti/workpulse"}
 
 [project.optional-dependencies]
 dev = [
