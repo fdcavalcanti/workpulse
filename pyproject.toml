@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "worktracker"
+name = "workpulse"
 version = "0.1.0"
 description = "Track working time using systemd login information"
 readme = "README.md"
@@ -13,7 +13,7 @@ dependencies = [
     "paho-mqtt>=2.0.0",
 ]
 authors = [
-    {name = "WorkTracker Contributors"}
+    {name = "WorkPulse Contributors"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
