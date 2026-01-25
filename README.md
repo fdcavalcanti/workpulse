@@ -167,4 +167,4 @@ Contributions are welcome! Please ensure:
 
 ## License
 
-MIT License - see LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
