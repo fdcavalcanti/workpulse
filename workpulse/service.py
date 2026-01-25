@@ -288,7 +288,7 @@ WantedBy=timers.target
         if workpulse_cmd:
             mqtt_start_cmd = f"{workpulse_cmd} mqtt start"
         else:
-            mqtt_start_cmd = f"{python} -m workpulse mqtt start"
+            mqtt_start_cmd = f"{python} -m workpulse mqtt start local"
 
         unit_content = f"""[Unit]
 Description={self.MQTT_SERVICE_DESCRIPTION}
