@@ -1,5 +1,9 @@
 # WorkPulse
 
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/)
+[![PyPI Version](https://img.shields.io/pypi/v/workpulse)](https://pypi.org/project/workpulse/)
+
 A Python-based tool for tracking daily working time using systemd login information. WorkPulse automatically monitors your active session and logs working time, excluding periods when your system is suspended, locked, or hibernated. Also, this tool is able to sync the data to your Home Assistant using MQTT.
 
 ## Features
