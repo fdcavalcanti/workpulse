@@ -36,13 +36,13 @@ dev = [
 ]
 
 [project.scripts]
-worktracker = "worktracker.cli:main"
+workpulse = "workpulse.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-where = ["worktracker"]
+where = ["."]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -51,14 +51,14 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
-    "--cov=worktracker",
+    "--cov=workpulse",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-fail-under=80",
 ]
 
 [tool.coverage.run]
-source = ["src/worktracker"]
+source = ["workpulse"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
@@ -77,4 +77,4 @@ exclude_lines = [
     "@abstractmethod",
 ]
 [tool.setuptools_scm]
-write_to = "worktracker/_version.py"
+write_to = "workpulse/_version.py"

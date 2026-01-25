@@ -1,6 +1,6 @@
-# WorkTracker
+# WorkPulse
 
-A Python-based tool for tracking daily working time using systemd login information. WorkTracker automatically monitors your active session and logs working time, excluding periods when your system is suspended, locked, or hibernated. Also, this tool is able to sync the data to your Home Assistant using MQTT.
+A Python-based tool for tracking daily working time using systemd login information. WorkPulse automatically monitors your active session and logs working time, excluding periods when your system is suspended, locked, or hibernated. Also, this tool is able to sync the data to your Home Assistant using MQTT.
 
 ## Features
 
@@ -35,7 +35,7 @@ well documented and does not affect performance (which is not a problem here).
 ### From PyPI
 
 ```bash
-pip install worktracker
+pip install workpulse
 ```
 
 ## Usage
@@ -45,53 +45,53 @@ pip install worktracker
 Install and start tracking:
 
 ```bash
-worktracker install
+workpulse install
 ```
 
 This command will:
-- Initialize the SQLite database in `~/.worktracker/worktracker.db`
-- Create and install a systemd user timer (`worktracker.timer`)
+- Initialize the SQLite database in `~/.workpulse/workpulse.db`
+- Create and install a systemd user timer (`workpulse.timer`)
 - Enable and start the timer to begin tracking
 - The timer will automatically start when you log in
 
 View current tracking status and today's summary:
 
 ```bash
-worktracker status
+workpulse status
 ```
 
 If needed, you can uninstall:
 
 ```bash
-worktracker uninstall
+workpulse uninstall
 ```
 
-This removes the systemd timer and service files. Note: The database files in `~/.worktracker/` are not removed automatically. To completely remove all data, manually delete the `~/.worktracker/` directory.
+This removes the systemd timer and service files. Note: The database files in `~/.workpulse/` are not removed automatically. To completely remove all data, manually delete the `~/.workpulse/` directory.
 
 
 ## Home Assistant Integration
 
-WorkTracker can publish daily time tracking data to Home Assistant via MQTT, allowing you to monitor your working time directly in your Home Assistant dashboard.
+WorkPulse can publish daily time tracking data to Home Assistant via MQTT, allowing you to monitor your working time directly in your Home Assistant dashboard.
 
 ### Setup
 
-1. **Configure MQTT in WorkTracker:**
+1. **Configure MQTT in WorkPulse:**
 
-   During installation, WorkTracker creates a default MQTT configuration file at `~/.worktracker/mqtt_config.toml`. Edit this file to set your MQTT broker details:
+   During installation, WorkPulse creates a default MQTT configuration file at `~/.workpulse/mqtt_config.toml`. Edit this file to set your MQTT broker details:
 
    ```toml
    broker = "192.168.1.100"  # Your MQTT broker IP address
    port = 1883
    username = ""  # Optional: MQTT username
    password = ""  # Optional: MQTT password
-   topic_prefix = "worktracker"
+   topic_prefix = "workpulse"
    update_interval = 60  # Publish updates every 60 seconds
    ```
 
 2. **Generate Home Assistant YAML Configuration:**
 
    ```bash
-   worktracker mqtt yaml
+   workpulse mqtt yaml
    ```
 
    This command generates the Home Assistant YAML configuration with your hostname automatically filled in.
@@ -106,34 +106,34 @@ WorkTracker can publish daily time tracking data to Home Assistant via MQTT, all
    To run the publisher as a service:
 
    ```bash
-   worktracker mqtt start service
+   workpulse mqtt start service
    ```
 
    This should be done only once and it should work automatically on next reboots.
    Or, to run it in the terminal:
 
    ```bash
-   worktracker mqtt start local
+   workpulse mqtt start local
    ```
 
    This allows you to simply CTRL-C and the publisher stops.
 
 
-The integration creates a single sensor that displays your daily total active time formatted as hours and minutes (e.g., "2h 30m" or "45m"). The sensor updates automatically as WorkTracker publishes new data.
+The integration creates a single sensor that displays your daily total active time formatted as hours and minutes (e.g., "2h 30m" or "45m"). The sensor updates automatically as WorkPulse publishes new data.
 
 ### MQTT Commands
 
-- `worktracker mqtt start <mode>` - Start the MQTT publisher daemon
-- `worktracker mqtt stop` - Stop the MQTT publisher
-- `worktracker mqtt status` - Show MQTT configuration status
-- `worktracker mqtt publish` - Manually publish status (for testing)
-- `worktracker mqtt uninstall` - Disable the service and delete the publisher file.
-- `worktracker mqtt yaml` - Generate Home Assistant YAML configuration
+- `workpulse mqtt start <mode>` - Start the MQTT publisher daemon
+- `workpulse mqtt stop` - Stop the MQTT publisher
+- `workpulse mqtt status` - Show MQTT configuration status
+- `workpulse mqtt publish` - Manually publish status (for testing)
+- `workpulse mqtt uninstall` - Disable the service and delete the publisher file.
+- `workpulse mqtt yaml` - Generate Home Assistant YAML configuration
 
 
 ## How It Works
 
-WorkTracker uses a systemd user timer that runs every minute. Each minute, it:
+WorkPulse uses a systemd user timer that runs every minute. Each minute, it:
 
 1. Checks if your session is active using `loginctl`
 2. Verifies the session is not locked

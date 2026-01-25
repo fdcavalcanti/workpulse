@@ -1,4 +1,4 @@
-"""Command-line interface for worktracker."""
+"""Command-line interface for workpulse."""
 
 import argparse
 import signal
@@ -14,20 +14,20 @@ from .service import ServiceManager
 from .tracker import WorkTracker
 
 
-class WorkTrackerCLI:
-    """Command-line interface for worktracker."""
+class WorkPulseCLI:
+    """Command-line interface for workpulse."""
 
     def __init__(self) -> None:
         """Initialize the CLI."""
         self.service_manager = ServiceManager()
 
     def install(self) -> int:
-        """Install worktracker: initialize database and install systemd timer.
+        """Install workpulse: initialize database and install systemd timer.
 
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        print("Installing worktracker...")
+        print("Installing workpulse...")
 
         # Initialize database
         try:
@@ -71,17 +71,17 @@ class WorkTrackerCLI:
             return 1
         print("✓ Timer started")
 
-        print("\nworktracker has been installed and started successfully!")
+        print("\nworkpulse has been installed and started successfully!")
         print("The timer will update your working time every minute.")
         return 0
 
     def stop(self) -> int:
-        """Stop the worktracker timer.
+        """Stop the workpulse timer.
 
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        print("Stopping worktracker timer...")
+        print("Stopping workpulse timer...")
 
         if not self.service_manager.is_timer_installed():
             print("ERROR: Timer is not installed")
@@ -96,20 +96,20 @@ class WorkTrackerCLI:
         else:
             print("✓ Timer stopped and disabled")
 
-        print("worktracker timer has been stopped.")
+        print("workpulse timer has been stopped.")
         return 0
 
     def start(self) -> int:
-        """Start the worktracker timer.
+        """Start the workpulse timer.
 
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        print("Starting worktracker timer...")
+        print("Starting workpulse timer...")
 
         if not self.service_manager.is_timer_installed():
             print("ERROR: Timer is not installed")
-            print("Run 'worktracker install' to set up the timer first.")
+            print("Run 'workpulse install' to set up the timer first.")
             return 1
 
         if not self.service_manager.start_timer():
@@ -125,16 +125,16 @@ class WorkTrackerCLI:
             else:
                 print("WARNING: Timer started but failed to enable")
 
-        print("worktracker timer is now running.")
+        print("workpulse timer is now running.")
         return 0
 
     def uninstall(self) -> int:
-        """Uninstall worktracker: stop timer and remove files.
+        """Uninstall workpulse: stop timer and remove files.
 
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        print("Uninstalling worktracker...")
+        print("Uninstalling workpulse...")
 
         if not self.service_manager.is_timer_installed():
             print("Timer is not installed. Nothing to uninstall.")
@@ -165,9 +165,9 @@ class WorkTrackerCLI:
         else:
             print("✓ Systemd daemon reloaded")
 
-        print("\nworktracker has been uninstalled successfully!")
-        print("Note: Database files in ~/.worktracker/ were not removed.")
-        print("      To remove them manually, delete ~/.worktracker/ directory.")
+        print("\nworkpulse has been uninstalled successfully!")
+        print("Note: Database files in ~/.workpulse/ were not removed.")
+        print("      To remove them manually, delete ~/.workpulse/ directory.")
         return 0
 
     def status(self) -> int:
@@ -179,7 +179,7 @@ class WorkTrackerCLI:
         # Check timer status
         if not self.service_manager.is_timer_installed():
             print("Timer status: Not installed")
-            print("\nRun 'worktracker install' to set up tracking.")
+            print("\nRun 'workpulse install' to set up tracking.")
             return 1
 
         is_running = self.service_manager.is_timer_running()
@@ -283,7 +283,7 @@ class WorkTrackerCLI:
         print("✓ MQTT service started")
 
         print("\nMQTT publisher service has been installed and started successfully!")
-        print("Use 'worktracker mqtt status' to check service status.")
+        print("Use 'workpulse mqtt status' to check service status.")
         return 0
 
     def mqtt_start(self, as_service: bool = False) -> int:
@@ -380,7 +380,7 @@ class WorkTrackerCLI:
         print("✓ MQTT service started")
 
         print("\nMQTT publisher service is now running.")
-        print("Use 'worktracker mqtt status' to check service status.")
+        print("Use 'workpulse mqtt status' to check service status.")
         return 0
 
     def mqtt_stop(self) -> int:
@@ -480,8 +480,8 @@ class WorkTrackerCLI:
             print(f"  Running: No")
 
         print("\nUsage:")
-        print("  'worktracker mqtt start service' - Start MQTT publisher as service")
-        print("  'worktracker mqtt stop' - Stop MQTT publisher service")
+        print("  'workpulse mqtt start service' - Start MQTT publisher as service")
+        print("  'workpulse mqtt stop' - Stop MQTT publisher service")
         return 0
 
     def mqtt_publish(self) -> int:
@@ -536,36 +536,36 @@ class WorkTrackerCLI:
         print("1. Copy the YAML configuration above")
         print("2. Paste it into your Home Assistant configuration.yaml file")
         print("3. Restart Home Assistant (or reload MQTT integration)")
-        print("4. Ensure WorkTracker MQTT publisher is running: worktracker mqtt start")
+        print("4. Ensure WorkPulse MQTT publisher is running: workpulse mqtt start")
 
         return 0
 
 
 def main() -> int:
-    """Main entry point for worktracker CLI.
+    """Main entry point for workpulse CLI.
 
     Returns:
         Exit code
     """
     parser = argparse.ArgumentParser(
-        description="Track working time using systemd login information"
+        description="WorkPulse - Track working time using systemd login information"
     )
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Install command
     install_parser = subparsers.add_parser(
-        "install", help="Install and start worktracker"
+        "install", help="Install and start workpulse"
     )
 
     # Stop command
-    stop_parser = subparsers.add_parser("stop", help="Stop worktracker timer")
+    stop_parser = subparsers.add_parser("stop", help="Stop workpulse timer")
 
     # Start command
-    start_parser = subparsers.add_parser("start", help="Start worktracker timer")
+    start_parser = subparsers.add_parser("start", help="Start workpulse timer")
 
     # Uninstall command
     uninstall_parser = subparsers.add_parser(
-        "uninstall", help="Uninstall worktracker timer"
+        "uninstall", help="Uninstall workpulse timer"
     )
 
     # Status command
@@ -620,7 +620,7 @@ def main() -> int:
         parser.print_help()
         return 1
 
-    cli = WorkTrackerCLI()
+    cli = WorkPulseCLI()
 
     if args.command == "install":
         return cli.install()
