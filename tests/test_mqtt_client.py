@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from worktracker.database import Database
-from worktracker.mqtt_client import MQTTClient
-from worktracker.mqtt_config import MQTTConfig
-from worktracker.tracker import WorkTracker
+from workpulse.database import Database
+from workpulse.mqtt_client import MQTTClient
+from workpulse.mqtt_config import MQTTConfig
+from workpulse.tracker import WorkTracker
 
 
 class TestMQTTClient:
@@ -44,7 +44,7 @@ class TestMQTTClient:
         """Create an MQTTClient instance."""
         return MQTTClient(mqtt_config, tracker)
 
-    @patch("worktracker.mqtt_client.socket.gethostname")
+    @patch("workpulse.mqtt_client.socket.gethostname")
     def test_init(self, mock_gethostname, mqtt_config):
         """Test MQTTClient initialization."""
         mock_gethostname.return_value = "testhost"
@@ -68,7 +68,7 @@ class TestMQTTClient:
         assert isinstance(hostname, str)
         assert len(hostname) > 0
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_connect_success(self, mock_client_class, mqtt_client):
         """Test successful connection to MQTT broker."""
         mock_client = MagicMock()
@@ -81,7 +81,7 @@ class TestMQTTClient:
         mock_client.connect.assert_called_once()
         mock_client.loop_start.assert_called_once()
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_connect_already_connected(self, mock_client_class, mqtt_client):
         """Test connect when already connected."""
         mock_client = MagicMock()
@@ -97,7 +97,7 @@ class TestMQTTClient:
         # connect should only be called once
         assert mock_client.connect.call_count == 1
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_connect_with_credentials(self, mock_client_class, mqtt_config):
         """Test connection with username/password."""
         mqtt_config.username = "user"
@@ -112,7 +112,7 @@ class TestMQTTClient:
 
         mock_client.username_pw_set.assert_called_once_with("user", "pass")
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_connect_failure(self, mock_client_class, mqtt_client):
         """Test connection failure handling."""
         mock_client = MagicMock()
@@ -151,7 +151,7 @@ class TestMQTTClient:
 
         # Should not raise any exceptions
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_disconnect(self, mock_client_class, mqtt_client):
         """Test disconnecting from MQTT broker."""
         mock_client = MagicMock()
@@ -165,7 +165,7 @@ class TestMQTTClient:
         mock_client.disconnect.assert_called_once()
         assert mqtt_client.client is None
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_disconnect_not_connected(self, mock_client_class, mqtt_client):
         """Test disconnect when not connected."""
         mock_client = MagicMock()
@@ -178,7 +178,7 @@ class TestMQTTClient:
         mock_client.loop_stop.assert_not_called()
         assert mqtt_client.client is None
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_publish_status_success(self, mock_client_class, mqtt_client, temp_db):
         """Test successful status publication."""
         # Add some time to the database
@@ -200,7 +200,7 @@ class TestMQTTClient:
         call_args = mock_client.publish.call_args
         topic = call_args[0][0]
         payload = call_args[0][1]
-        assert "worktracker" in topic
+        assert "workpulse" in topic
         assert "status" in topic
 
         # Verify payload structure
@@ -210,7 +210,7 @@ class TestMQTTClient:
         assert "timestamp" in message
         assert message["total_time"] == 3600.0
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_publish_status_not_connected(self, mock_client_class, mqtt_client):
         """Test publish_status when not connected."""
         mock_client = MagicMock()
@@ -224,7 +224,7 @@ class TestMQTTClient:
 
         assert result is False
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_publish_status_publish_failure(self, mock_client_class, mqtt_client):
         """Test publish_status when publish fails."""
         mock_client = MagicMock()
@@ -239,7 +239,7 @@ class TestMQTTClient:
 
         assert result is False
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_publish_status_with_last_update(
         self, mock_client_class, mqtt_client, temp_db
     ):
@@ -264,7 +264,7 @@ class TestMQTTClient:
         # last_update should be a string (ISO format) or None
         assert payload["last_update"] is None or isinstance(payload["last_update"], str)
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_publish_status_exception(self, mock_client_class, mqtt_client):
         """Test publish_status exception handling."""
         mock_client = MagicMock()
@@ -277,7 +277,7 @@ class TestMQTTClient:
 
         assert result is False
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_start_success(self, mock_client_class, mqtt_client):
         """Test starting the MQTT publisher daemon."""
         mock_client = MagicMock()
@@ -294,7 +294,7 @@ class TestMQTTClient:
         # Cleanup
         mqtt_client.stop()
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_start_already_running(self, mock_client_class, mqtt_client):
         """Test starting when already running."""
         mock_client = MagicMock()
@@ -307,7 +307,7 @@ class TestMQTTClient:
 
         assert result is True
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_start_connection_failure(self, mock_client_class, mqtt_client):
         """Test start when connection fails."""
         mock_client = MagicMock()
@@ -320,7 +320,7 @@ class TestMQTTClient:
         assert result is False
         assert mqtt_client._running is False
 
-    @patch("worktracker.mqtt_client.mqtt.Client")
+    @patch("workpulse.mqtt_client.mqtt.Client")
     def test_stop(self, mock_client_class, mqtt_client):
         """Test stopping the MQTT publisher daemon."""
         mock_client = MagicMock()

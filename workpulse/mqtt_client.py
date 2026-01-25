@@ -10,7 +10,6 @@ from typing import Optional
 
 import paho.mqtt.client as mqtt
 
-from .database import Database
 from .mqtt_config import MQTTConfig
 from .tracker import WorkTracker
 

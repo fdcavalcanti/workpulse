@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 import pytest
 
-from worktracker.models import DailyLog, Session, SessionState
+from workpulse.models import DailyLog, Session, SessionState
 
 
 class TestSessionState:

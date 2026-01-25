@@ -1,4 +1,4 @@
-"""Systemd timer management for worktracker."""
+"""Systemd timer management for workpulse."""
 
 import shutil
 import subprocess
@@ -9,12 +9,12 @@ from typing import Optional
 class ServiceManager:
     """Manages systemd user timer and service installation and control."""
 
-    TIMER_NAME = "worktracker.timer"
-    SERVICE_NAME = "worktracker.service"
-    SERVICE_DESCRIPTION = "WorkTracker - Track working time using systemd timer"
+    TIMER_NAME = "workpulse.timer"
+    SERVICE_NAME = "workpulse.service"
+    SERVICE_DESCRIPTION = "WorkPulse - Track working time using systemd timer"
 
-    MQTT_SERVICE_NAME = "worktracker-mqtt.service"
-    MQTT_SERVICE_DESCRIPTION = "WorkTracker MQTT Publisher"
+    MQTT_SERVICE_NAME = "workpulse-mqtt.service"
+    MQTT_SERVICE_DESCRIPTION = "WorkPulse MQTT Publisher"
 
     def __init__(self) -> None:
         """Initialize the service manager."""
@@ -31,20 +31,20 @@ class ServiceManager:
         """
         return shutil.which("python3") or shutil.which("python") or "python3"
 
-    def _get_worktracker_command(self) -> str:
-        """Get the worktracker command to run.
+    def _get_workpulse_command(self) -> str:
+        """Get the workpulse command to run.
 
         Returns:
-            Command string to run worktracker update
+            Command string to run workpulse update
         """
         python = self._get_python_executable()
-        # Try to find worktracker in PATH first
-        worktracker_cmd = shutil.which("worktracker")
-        if worktracker_cmd:
-            return f"{worktracker_cmd} update"
+        # Try to find workpulse in PATH first
+        workpulse_cmd = shutil.which("workpulse")
+        if workpulse_cmd:
+            return f"{workpulse_cmd} update"
 
-        # Fallback to python -m worktracker
-        return f"{python} -m worktracker update"
+        # Fallback to python -m workpulse
+        return f"{python} -m workpulse update"
 
     def generate_service_unit(self) -> str:
         """Generate systemd user service unit file content.
@@ -52,7 +52,7 @@ class ServiceManager:
         Returns:
             Service unit file content as string
         """
-        command = self._get_worktracker_command()
+        command = self._get_workpulse_command()
 
         unit_content = f"""[Unit]
 Description={self.SERVICE_DESCRIPTION}
@@ -72,7 +72,7 @@ StandardError=journal
             Timer unit file content as string
         """
         unit_content = f"""[Unit]
-Description=WorkTracker Timer - Update working time every minute
+Description=WorkPulse Timer - Update working time every minute
 Requires={self.SERVICE_NAME}
 
 [Timer]
@@ -284,11 +284,11 @@ WantedBy=timers.target
             Service unit file content as string
         """
         python = self._get_python_executable()
-        worktracker_cmd = shutil.which("worktracker")
-        if worktracker_cmd:
-            mqtt_start_cmd = f"{worktracker_cmd} mqtt start"
+        workpulse_cmd = shutil.which("workpulse")
+        if workpulse_cmd:
+            mqtt_start_cmd = f"{workpulse_cmd} mqtt start"
         else:
-            mqtt_start_cmd = f"{python} -m worktracker mqtt start"
+            mqtt_start_cmd = f"{python} -m workpulse mqtt start"
 
         unit_content = f"""[Unit]
 Description={self.MQTT_SERVICE_DESCRIPTION}

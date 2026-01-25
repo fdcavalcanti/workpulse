@@ -164,7 +164,3 @@ Contributions are welcome! Please ensure:
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Version
-
-Current version: **0.1.0**

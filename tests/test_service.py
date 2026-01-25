@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
-from worktracker.service import ServiceManager
+from workpulse.service import ServiceManager
 
 
 class TestServiceManager:
@@ -23,21 +23,20 @@ class TestServiceManager:
         """Test ServiceManager initialization."""
         expected_dir = tmp_path / ".config" / "systemd" / "user"
         assert service_manager.systemd_user_dir == expected_dir
-        assert service_manager.timer_path == expected_dir / "worktracker.timer"
-        assert service_manager.service_path == expected_dir / "worktracker.service"
+        assert service_manager.timer_path == expected_dir / "workpulse.timer"
+        assert service_manager.service_path == expected_dir / "workpulse.service"
         assert (
-            service_manager.mqtt_service_path
-            == expected_dir / "worktracker-mqtt.service"
+            service_manager.mqtt_service_path == expected_dir / "workpulse-mqtt.service"
         )
 
-    @patch("worktracker.service.shutil.which")
+    @patch("workpulse.service.shutil.which")
     def test_get_python_executable_finds_python3(self, mock_which, service_manager):
         """Test _get_python_executable finds python3."""
         mock_which.return_value = "/usr/bin/python3"
         assert service_manager._get_python_executable() == "/usr/bin/python3"
         mock_which.assert_called_once_with("python3")
 
-    @patch("worktracker.service.shutil.which")
+    @patch("workpulse.service.shutil.which")
     def test_get_python_executable_falls_back_to_python(
         self, mock_which, service_manager
     ):
@@ -47,7 +46,7 @@ class TestServiceManager:
         )
         assert service_manager._get_python_executable() == "/usr/bin/python"
 
-    @patch("worktracker.service.shutil.which")
+    @patch("workpulse.service.shutil.which")
     def test_get_python_executable_defaults_to_python3(
         self, mock_which, service_manager
     ):
@@ -55,50 +54,46 @@ class TestServiceManager:
         mock_which.return_value = None
         assert service_manager._get_python_executable() == "python3"
 
-    @patch("worktracker.service.shutil.which")
-    def test_get_worktracker_command_finds_worktracker(
-        self, mock_which, service_manager
-    ):
-        """Test _get_worktracker_command finds worktracker in PATH."""
+    @patch("workpulse.service.shutil.which")
+    def test_get_workpulse_command_finds_workpulse(self, mock_which, service_manager):
+        """Test _get_workpulse_command finds workpulse in PATH."""
         mock_which.side_effect = (
-            lambda cmd: "/usr/bin/worktracker"
-            if cmd == "worktracker"
+            lambda cmd: "/usr/bin/workpulse"
+            if cmd == "workpulse"
             else "/usr/bin/python3"
         )
-        assert (
-            service_manager._get_worktracker_command() == "/usr/bin/worktracker update"
-        )
+        assert service_manager._get_workpulse_command() == "/usr/bin/workpulse update"
 
-    @patch("worktracker.service.shutil.which")
-    def test_get_worktracker_command_falls_back_to_python_module(
+    @patch("workpulse.service.shutil.which")
+    def test_get_workpulse_command_falls_back_to_python_module(
         self, mock_which, service_manager
     ):
-        """Test _get_worktracker_command falls back to python -m worktracker."""
+        """Test _get_workpulse_command falls back to python -m workpulse."""
         mock_which.side_effect = (
             lambda cmd: "/usr/bin/python3" if cmd == "python3" else None
         )
         assert (
-            service_manager._get_worktracker_command()
-            == "/usr/bin/python3 -m worktracker update"
+            service_manager._get_workpulse_command()
+            == "/usr/bin/python3 -m workpulse update"
         )
 
     def test_generate_service_unit(self, service_manager):
         """Test generate_service_unit creates correct content."""
         with patch.object(
             service_manager,
-            "_get_worktracker_command",
-            return_value="worktracker update",
+            "_get_workpulse_command",
+            return_value="workpulse update",
         ):
             content = service_manager.generate_service_unit()
 
             assert "[Unit]" in content
             assert (
-                "Description=WorkTracker - Track working time using systemd timer"
+                "Description=WorkPulse - Track working time using systemd timer"
                 in content
             )
             assert "[Service]" in content
             assert "Type=oneshot" in content
-            assert "ExecStart=worktracker update" in content
+            assert "ExecStart=workpulse update" in content
             assert "StandardOutput=journal" in content
             assert "StandardError=journal" in content
 
@@ -108,8 +103,7 @@ class TestServiceManager:
 
         assert "[Unit]" in content
         assert (
-            "Description=WorkTracker Timer - Update working time every minute"
-            in content
+            "Description=WorkPulse Timer - Update working time every minute" in content
         )
         assert f"Requires={service_manager.SERVICE_NAME}" in content
         assert "[Timer]" in content
@@ -147,7 +141,7 @@ class TestServiceManager:
         assert not service_manager.timer_path.exists()
         assert not service_manager.service_path.exists()
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_enable_timer_success(self, mock_subprocess, service_manager):
         """Test enable_timer succeeds."""
         mock_result = MagicMock()
@@ -156,13 +150,13 @@ class TestServiceManager:
 
         assert service_manager.enable_timer() is True
         mock_subprocess.assert_called_once_with(
-            ["systemctl", "--user", "enable", "worktracker.timer"],
+            ["systemctl", "--user", "enable", "workpulse.timer"],
             capture_output=True,
             text=True,
             check=False,
         )
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_enable_timer_failure(self, mock_subprocess, service_manager):
         """Test enable_timer fails when systemctl returns non-zero."""
         mock_result = MagicMock()
@@ -171,7 +165,7 @@ class TestServiceManager:
 
         assert service_manager.enable_timer() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_disable_timer_success(self, mock_subprocess, service_manager):
         """Test disable_timer succeeds."""
         mock_result = MagicMock()
@@ -180,7 +174,7 @@ class TestServiceManager:
 
         assert service_manager.disable_timer() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_start_timer_success(self, mock_subprocess, service_manager):
         """Test start_timer succeeds."""
         mock_result = MagicMock()
@@ -189,7 +183,7 @@ class TestServiceManager:
 
         assert service_manager.start_timer() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_stop_timer_success(self, mock_subprocess, service_manager):
         """Test stop_timer succeeds."""
         mock_result = MagicMock()
@@ -198,7 +192,7 @@ class TestServiceManager:
 
         assert service_manager.stop_timer() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_get_timer_status_active(self, mock_subprocess, service_manager):
         """Test get_timer_status returns active."""
         mock_result = MagicMock()
@@ -208,7 +202,7 @@ class TestServiceManager:
 
         assert service_manager.get_timer_status() == "active"
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_get_timer_status_inactive(self, mock_subprocess, service_manager):
         """Test get_timer_status returns inactive when not active."""
         mock_result = MagicMock()
@@ -226,7 +220,7 @@ class TestServiceManager:
         """Test is_timer_installed returns False when timer doesn't exist."""
         assert service_manager.is_timer_installed() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_timer_enabled_true(self, mock_subprocess, service_manager):
         """Test is_timer_enabled returns True when enabled."""
         mock_result = MagicMock()
@@ -236,7 +230,7 @@ class TestServiceManager:
 
         assert service_manager.is_timer_enabled() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_timer_enabled_false(self, mock_subprocess, service_manager):
         """Test is_timer_enabled returns False when not enabled."""
         mock_result = MagicMock()
@@ -245,7 +239,7 @@ class TestServiceManager:
 
         assert service_manager.is_timer_enabled() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_timer_running_true(self, mock_subprocess, service_manager):
         """Test is_timer_running returns True when active."""
         mock_result = MagicMock()
@@ -255,7 +249,7 @@ class TestServiceManager:
 
         assert service_manager.is_timer_running() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_timer_running_false(self, mock_subprocess, service_manager):
         """Test is_timer_running returns False when not active."""
         mock_result = MagicMock()
@@ -264,7 +258,7 @@ class TestServiceManager:
 
         assert service_manager.is_timer_running() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_reload_daemon_success(self, mock_subprocess, service_manager):
         """Test reload_daemon succeeds."""
         mock_result = MagicMock()
@@ -273,7 +267,7 @@ class TestServiceManager:
 
         assert service_manager.reload_daemon() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_reload_daemon_failure(self, mock_subprocess, service_manager):
         """Test reload_daemon fails when systemctl returns non-zero."""
         mock_result = MagicMock()
@@ -283,22 +277,22 @@ class TestServiceManager:
         assert service_manager.reload_daemon() is False
 
     # MQTT Service Tests
-    @patch("worktracker.service.shutil.which")
-    def test_generate_mqtt_service_unit_with_worktracker_in_path(
+    @patch("workpulse.service.shutil.which")
+    def test_generate_mqtt_service_unit_with_workpulse_in_path(
         self, mock_which, service_manager
     ):
-        """Test generate_mqtt_service_unit when worktracker is in PATH."""
+        """Test generate_mqtt_service_unit when workpulse is in PATH."""
         mock_which.side_effect = lambda cmd: (
-            "/usr/local/bin/worktracker" if cmd == "worktracker" else None
+            "/usr/local/bin/workpulse" if cmd == "workpulse" else None
         )
         content = service_manager.generate_mqtt_service_unit()
         assert "[Unit]" in content
-        assert "WorkTracker MQTT Publisher" in content
-        assert "ExecStart=/usr/local/bin/worktracker mqtt start" in content
+        assert "WorkPulse MQTT Publisher" in content
+        assert "ExecStart=/usr/local/bin/workpulse mqtt start" in content
         assert "Type=simple" in content
         assert "Restart=on-failure" in content
 
-    @patch("worktracker.service.shutil.which")
+    @patch("workpulse.service.shutil.which")
     def test_generate_mqtt_service_unit_fallback_to_python(
         self, mock_which, service_manager
     ):
@@ -308,7 +302,7 @@ class TestServiceManager:
             return_value="/usr/bin/python3"
         )
         content = service_manager.generate_mqtt_service_unit()
-        assert "python3 -m worktracker mqtt start" in content
+        assert "python3 -m workpulse mqtt start" in content
 
     def test_install_mqtt_service(self, service_manager, tmp_path):
         """Test install_mqtt_service creates service file."""
@@ -330,7 +324,7 @@ class TestServiceManager:
                 assert service_manager.uninstall_mqtt_service() is True
         assert not service_manager.mqtt_service_path.exists()
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_enable_mqtt_service_success(self, mock_subprocess, service_manager):
         """Test enable_mqtt_service succeeds."""
         mock_result = MagicMock()
@@ -339,13 +333,13 @@ class TestServiceManager:
 
         assert service_manager.enable_mqtt_service() is True
         mock_subprocess.assert_called_once_with(
-            ["systemctl", "--user", "enable", "worktracker-mqtt.service"],
+            ["systemctl", "--user", "enable", "workpulse-mqtt.service"],
             capture_output=True,
             text=True,
             check=False,
         )
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_enable_mqtt_service_failure(self, mock_subprocess, service_manager):
         """Test enable_mqtt_service fails."""
         mock_result = MagicMock()
@@ -354,7 +348,7 @@ class TestServiceManager:
 
         assert service_manager.enable_mqtt_service() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_disable_mqtt_service_success(self, mock_subprocess, service_manager):
         """Test disable_mqtt_service succeeds."""
         mock_result = MagicMock()
@@ -363,7 +357,7 @@ class TestServiceManager:
 
         assert service_manager.disable_mqtt_service() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_disable_mqtt_service_failure(self, mock_subprocess, service_manager):
         """Test disable_mqtt_service fails."""
         mock_result = MagicMock()
@@ -372,7 +366,7 @@ class TestServiceManager:
 
         assert service_manager.disable_mqtt_service() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_start_mqtt_service_success(self, mock_subprocess, service_manager):
         """Test start_mqtt_service succeeds."""
         mock_result = MagicMock()
@@ -381,7 +375,7 @@ class TestServiceManager:
 
         assert service_manager.start_mqtt_service() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_start_mqtt_service_failure(self, mock_subprocess, service_manager):
         """Test start_mqtt_service fails."""
         mock_result = MagicMock()
@@ -390,7 +384,7 @@ class TestServiceManager:
 
         assert service_manager.start_mqtt_service() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_stop_mqtt_service_success(self, mock_subprocess, service_manager):
         """Test stop_mqtt_service succeeds."""
         mock_result = MagicMock()
@@ -399,7 +393,7 @@ class TestServiceManager:
 
         assert service_manager.stop_mqtt_service() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_stop_mqtt_service_failure(self, mock_subprocess, service_manager):
         """Test stop_mqtt_service fails."""
         mock_result = MagicMock()
@@ -418,7 +412,7 @@ class TestServiceManager:
         """Test is_mqtt_service_installed returns False when file doesn't exist."""
         assert service_manager.is_mqtt_service_installed() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_mqtt_service_enabled_true(self, mock_subprocess, service_manager):
         """Test is_mqtt_service_enabled returns True when enabled."""
         mock_result = MagicMock()
@@ -428,7 +422,7 @@ class TestServiceManager:
 
         assert service_manager.is_mqtt_service_enabled() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_mqtt_service_enabled_false(self, mock_subprocess, service_manager):
         """Test is_mqtt_service_enabled returns False when not enabled."""
         mock_result = MagicMock()
@@ -437,7 +431,7 @@ class TestServiceManager:
 
         assert service_manager.is_mqtt_service_enabled() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_mqtt_service_running_true(self, mock_subprocess, service_manager):
         """Test is_mqtt_service_running returns True when active."""
         mock_result = MagicMock()
@@ -447,7 +441,7 @@ class TestServiceManager:
 
         assert service_manager.is_mqtt_service_running() is True
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_is_mqtt_service_running_false(self, mock_subprocess, service_manager):
         """Test is_mqtt_service_running returns False when not active."""
         mock_result = MagicMock()
@@ -456,7 +450,7 @@ class TestServiceManager:
 
         assert service_manager.is_mqtt_service_running() is False
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_get_mqtt_service_status_active(self, mock_subprocess, service_manager):
         """Test get_mqtt_service_status returns active."""
         mock_result = MagicMock()
@@ -466,7 +460,7 @@ class TestServiceManager:
 
         assert service_manager.get_mqtt_service_status() == "active"
 
-    @patch("worktracker.service.subprocess.run")
+    @patch("workpulse.service.subprocess.run")
     def test_get_mqtt_service_status_inactive(self, mock_subprocess, service_manager):
         """Test get_mqtt_service_status returns inactive."""
         mock_result = MagicMock()

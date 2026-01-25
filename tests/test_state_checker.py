@@ -5,15 +5,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from worktracker.state_checker import is_user_active
+from workpulse.state_checker import is_user_active
 
 
 class TestIsUserActive:
     """Test suite for is_user_active function."""
 
-    @patch("worktracker.state_checker._is_system_suspended")
-    @patch("worktracker.state_checker.subprocess.run")
-    @patch("worktracker.state_checker.os.getenv")
+    @patch("workpulse.state_checker._is_system_suspended")
+    @patch("workpulse.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.os.getenv")
     def test_user_active_not_locked(self, mock_getenv, mock_subprocess, mock_suspended):
         """Test is_user_active when user is active and not locked."""
         mock_suspended.return_value = False
@@ -41,8 +41,8 @@ class TestIsUserActive:
 
         assert is_user_active() is True
 
-    @patch("worktracker.state_checker._is_system_suspended")
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker._is_system_suspended")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_user_active_but_locked(self, mock_subprocess, mock_suspended):
         """Test is_user_active when user is active but locked."""
@@ -62,8 +62,8 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker._is_system_suspended")
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker._is_system_suspended")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_user_inactive(self, mock_subprocess, mock_suspended):
         """Test is_user_active when user session is inactive."""
@@ -83,7 +83,7 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_no_session_found(self, mock_subprocess):
         """Test is_user_active when no session is found for user."""
@@ -96,7 +96,7 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_list_sessions_fails(self, mock_subprocess):
         """Test is_user_active when list-sessions command fails."""
@@ -109,7 +109,7 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_show_session_fails(self, mock_subprocess):
         """Test is_user_active when show-session command fails."""
@@ -127,14 +127,14 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.subprocess.run")
     def test_no_username_available(self, mock_subprocess):
         """Test is_user_active when username cannot be determined."""
         # Remove USER and USERNAME from environment
         with patch.dict(os.environ, {}, clear=True):
             assert is_user_active() is False
 
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_timeout_exception(self, mock_subprocess):
         """Test is_user_active when subprocess times out."""
@@ -144,7 +144,7 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.subprocess.run")
     @patch.dict(os.environ, {"USER": "testuser"})
     def test_generic_exception(self, mock_subprocess):
         """Test is_user_active when generic exception occurs."""
@@ -152,9 +152,9 @@ class TestIsUserActive:
 
         assert is_user_active() is False
 
-    @patch("worktracker.state_checker._is_system_suspended")
-    @patch("worktracker.state_checker.subprocess.run")
-    @patch("worktracker.state_checker.os.getenv")
+    @patch("workpulse.state_checker._is_system_suspended")
+    @patch("workpulse.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.os.getenv")
     def test_multiple_sessions_finds_correct_one(
         self, mock_getenv, mock_subprocess, mock_suspended
     ):
@@ -188,9 +188,9 @@ class TestIsUserActive:
         show_call = mock_subprocess.call_args_list[1]
         assert "c2" in show_call[0][0]  # Session ID should be c2
 
-    @patch("worktracker.state_checker._is_system_suspended")
-    @patch("worktracker.state_checker.subprocess.run")
-    @patch("worktracker.state_checker.os.getenv")
+    @patch("workpulse.state_checker._is_system_suspended")
+    @patch("workpulse.state_checker.subprocess.run")
+    @patch("workpulse.state_checker.os.getenv")
     def test_uses_username_env_var(self, mock_getenv, mock_subprocess, mock_suspended):
         """Test is_user_active uses USERNAME when USER is not available."""
         mock_suspended.return_value = False

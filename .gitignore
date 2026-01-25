@@ -47,3 +47,5 @@ Thumbs.db
 *.db
 *.sqlite
 ~/.worktracker/
+
+_version.py

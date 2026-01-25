@@ -1,4 +1,4 @@
-"""MQTT configuration management for worktracker."""
+"""MQTT configuration management for workpulse."""
 
 import json
 import logging
@@ -17,7 +17,7 @@ class MQTTConfig:
     port: int = 1883
     username: Optional[str] = None
     password: Optional[str] = None
-    topic_prefix: str = "worktracker"
+    topic_prefix: str = "workpulse"
     update_interval: int = 60
     qos: int = 0
 
@@ -49,7 +49,7 @@ def create_default_config(config_path: Optional[Path] = None) -> Path:
 
     Args:
         config_path: Path to configuration file. If None, uses default location
-                     (~/.worktracker/mqtt_config.json)
+                     (~/.workpulse/mqtt_config.json)
 
     Returns:
         Path to the created configuration file
@@ -59,7 +59,7 @@ def create_default_config(config_path: Optional[Path] = None) -> Path:
     """
     if config_path is None:
         home = Path.home()
-        config_dir = home / ".worktracker"
+        config_dir = home / ".workpulse"
         config_dir.mkdir(mode=0o700, exist_ok=True)
         config_path = config_dir / "mqtt_config.json"
 
@@ -73,7 +73,7 @@ def create_default_config(config_path: Optional[Path] = None) -> Path:
         "port": 1883,
         "username": None,
         "password": None,
-        "topic_prefix": "worktracker",
+        "topic_prefix": "workpulse",
         "update_interval": 60,
         "qos": 0,
     }
@@ -93,7 +93,7 @@ def load_config(config_path: Optional[Path] = None) -> MQTTConfig:
 
     Args:
         config_path: Path to configuration file. If None, uses default location
-                     (~/.worktracker/mqtt_config.json)
+                     (~/.workpulse/mqtt_config.json)
 
     Returns:
         MQTTConfig object with loaded configuration
@@ -104,7 +104,7 @@ def load_config(config_path: Optional[Path] = None) -> MQTTConfig:
     """
     if config_path is None:
         home = Path.home()
-        config_dir = home / ".worktracker"
+        config_dir = home / ".workpulse"
         config_path = config_dir / "mqtt_config.json"
 
     if not config_path.exists():

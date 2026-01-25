@@ -9,20 +9,20 @@ from .models import DailyLog
 
 
 class Database:
-    """Database manager for worktracker time tracking data."""
+    """Database manager for workpulse time tracking data."""
 
     def __init__(self, db_path: Optional[Path] = None) -> None:
         """Initialize the database connection.
 
         Args:
             db_path: Path to the database file. If None, uses default location
-                     (~/.worktracker/worktracker.db)
+                     (~/.workpulse/workpulse.db)
         """
         if db_path is None:
             home = Path.home()
-            db_dir = home / ".worktracker"
+            db_dir = home / ".workpulse"
             db_dir.mkdir(mode=0o700, exist_ok=True)
-            db_path = db_dir / "worktracker.db"
+            db_path = db_dir / "workpulse.db"
 
         self.db_path = db_path
         self._connection: Optional[sqlite3.Connection] = None

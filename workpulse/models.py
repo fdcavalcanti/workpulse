@@ -1,4 +1,4 @@
-"""Domain models for worktracker."""
+"""Domain models for workpulse."""
 
 from dataclasses import dataclass
 from datetime import date, datetime

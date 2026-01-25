@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from worktracker.mqtt_config import MQTTConfig, create_default_config, load_config
+from workpulse.mqtt_config import MQTTConfig, create_default_config, load_config
 
 
 class TestMQTTConfig:
@@ -21,7 +21,7 @@ class TestMQTTConfig:
         assert config.port == 1883
         assert config.username is None
         assert config.password is None
-        assert config.topic_prefix == "worktracker"
+        assert config.topic_prefix == "workpulse"
         assert config.update_interval == 60
         assert config.qos == 0
 
@@ -75,7 +75,7 @@ class TestMQTTConfig:
         config = MQTTConfig(broker_ip="192.168.1.1")
         topic = config.get_topic("myhost")
 
-        assert topic == "worktracker/myhost/status"
+        assert topic == "workpulse/myhost/status"
 
     def test_get_topic_custom_prefix(self):
         """Test get_topic with custom topic prefix."""
@@ -104,15 +104,15 @@ class TestCreateDefaultConfig:
         assert config_data["port"] == 1883
         assert config_data["username"] is None
         assert config_data["password"] is None
-        assert config_data["topic_prefix"] == "worktracker"
+        assert config_data["topic_prefix"] == "workpulse"
         assert config_data["update_interval"] == 60
         assert config_data["qos"] == 0
 
-    @patch("worktracker.mqtt_config.Path.home")
+    @patch("workpulse.mqtt_config.Path.home")
     def test_create_default_config_default_path(self, mock_home, tmp_path):
         """Test creating config file at default path."""
         mock_home.return_value = tmp_path
-        expected_path = tmp_path / ".worktracker" / "mqtt_config.json"
+        expected_path = tmp_path / ".workpulse" / "mqtt_config.json"
 
         result_path = create_default_config()
 
@@ -185,11 +185,11 @@ class TestLoadConfig:
         assert config.broker_ip == "192.168.1.100"
         assert config.port == 1883  # Default value
 
-    @patch("worktracker.mqtt_config.Path.home")
+    @patch("workpulse.mqtt_config.Path.home")
     def test_load_config_default_path(self, mock_home, tmp_path):
         """Test loading config from default path."""
         mock_home.return_value = tmp_path
-        config_path = tmp_path / ".worktracker" / "mqtt_config.json"
+        config_path = tmp_path / ".workpulse" / "mqtt_config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
         config_data = {"broker_ip": "192.168.1.100"}

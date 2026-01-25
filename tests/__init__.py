@@ -1,1 +1,1 @@
-"""Test suite for worktracker."""
+"""Test suite for workpulse."""

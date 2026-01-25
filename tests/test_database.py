@@ -7,7 +7,7 @@ from time import sleep
 
 import pytest
 
-from worktracker.database import Database
+from workpulse.database import Database
 
 
 class TestDatabase:
@@ -27,7 +27,7 @@ class TestDatabase:
         """Test database initialization with default path."""
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         db = Database()
-        assert db.db_path == tmp_path / ".worktracker" / "worktracker.db"
+        assert db.db_path == tmp_path / ".workpulse" / "workpulse.db"
         db.close()
 
     def test_init_custom_path(self, tmp_path):
