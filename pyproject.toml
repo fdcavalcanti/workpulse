@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools-scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "workpulse"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Track working time using systemd login information"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -76,3 +76,5 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@abstractmethod",
 ]
+[tool.setuptools_scm]
+write_to = "worktracker/_version.py"
