@@ -17,14 +17,16 @@ class TestIsUserActive:
     def test_user_active_not_locked(self, mock_getenv, mock_subprocess, mock_suspended):
         """Test is_user_active when user is active and not locked."""
         mock_suspended.return_value = False
+
         def getenv_side_effect(key, default=None):
             if key == "USER":
                 return "testuser"
             elif key == "USERNAME":
                 return None
             return default if default else None
+
         mock_getenv.side_effect = getenv_side_effect
-        
+
         # Mock list-sessions output (format: SESSION_ID UID USERNAME SEAT TTY STATE LOCKED)
         list_sessions_result = MagicMock()
         list_sessions_result.returncode = 0
@@ -45,7 +47,7 @@ class TestIsUserActive:
     def test_user_active_but_locked(self, mock_subprocess, mock_suspended):
         """Test is_user_active when user is active but locked."""
         mock_suspended.return_value = False
-        
+
         # Mock list-sessions output (format: SESSION_ID UID USERNAME SEAT TTY STATE LOCKED)
         list_sessions_result = MagicMock()
         list_sessions_result.returncode = 0
@@ -66,7 +68,7 @@ class TestIsUserActive:
     def test_user_inactive(self, mock_subprocess, mock_suspended):
         """Test is_user_active when user session is inactive."""
         mock_suspended.return_value = False
-        
+
         # Mock list-sessions output (format: SESSION_ID UID USERNAME SEAT TTY STATE LOCKED)
         list_sessions_result = MagicMock()
         list_sessions_result.returncode = 0
@@ -153,17 +155,21 @@ class TestIsUserActive:
     @patch("worktracker.state_checker._is_system_suspended")
     @patch("worktracker.state_checker.subprocess.run")
     @patch("worktracker.state_checker.os.getenv")
-    def test_multiple_sessions_finds_correct_one(self, mock_getenv, mock_subprocess, mock_suspended):
+    def test_multiple_sessions_finds_correct_one(
+        self, mock_getenv, mock_subprocess, mock_suspended
+    ):
         """Test is_user_active with multiple sessions finds correct user."""
         mock_suspended.return_value = False
+
         def getenv_side_effect(key, default=None):
             if key == "USER":
                 return "testuser"
             elif key == "USERNAME":
                 return None
             return default if default else None
+
         mock_getenv.side_effect = getenv_side_effect
-        
+
         # Mock list-sessions output with multiple users (format: SESSION_ID UID USERNAME SEAT TTY STATE LOCKED)
         list_sessions_result = MagicMock()
         list_sessions_result.returncode = 0
@@ -188,14 +194,16 @@ class TestIsUserActive:
     def test_uses_username_env_var(self, mock_getenv, mock_subprocess, mock_suspended):
         """Test is_user_active uses USERNAME when USER is not available."""
         mock_suspended.return_value = False
+
         def getenv_side_effect(key, default=None):
             if key == "USER":
                 return None
             elif key == "USERNAME":
                 return "testuser"
             return default if default else None
+
         mock_getenv.side_effect = getenv_side_effect
-        
+
         # Mock list-sessions output (format: SESSION_ID UID USERNAME SEAT TTY STATE LOCKED)
         list_sessions_result = MagicMock()
         list_sessions_result.returncode = 0

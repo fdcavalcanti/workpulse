@@ -25,7 +25,10 @@ class TestServiceManager:
         assert service_manager.systemd_user_dir == expected_dir
         assert service_manager.timer_path == expected_dir / "worktracker.timer"
         assert service_manager.service_path == expected_dir / "worktracker.service"
-        assert service_manager.mqtt_service_path == expected_dir / "worktracker-mqtt.service"
+        assert (
+            service_manager.mqtt_service_path
+            == expected_dir / "worktracker-mqtt.service"
+        )
 
     @patch("worktracker.service.shutil.which")
     def test_get_python_executable_finds_python3(self, mock_which, service_manager):
@@ -35,36 +38,64 @@ class TestServiceManager:
         mock_which.assert_called_once_with("python3")
 
     @patch("worktracker.service.shutil.which")
-    def test_get_python_executable_falls_back_to_python(self, mock_which, service_manager):
+    def test_get_python_executable_falls_back_to_python(
+        self, mock_which, service_manager
+    ):
         """Test _get_python_executable falls back to python."""
-        mock_which.side_effect = lambda cmd: "/usr/bin/python" if cmd == "python" else None
+        mock_which.side_effect = (
+            lambda cmd: "/usr/bin/python" if cmd == "python" else None
+        )
         assert service_manager._get_python_executable() == "/usr/bin/python"
 
     @patch("worktracker.service.shutil.which")
-    def test_get_python_executable_defaults_to_python3(self, mock_which, service_manager):
+    def test_get_python_executable_defaults_to_python3(
+        self, mock_which, service_manager
+    ):
         """Test _get_python_executable defaults to python3 string."""
         mock_which.return_value = None
         assert service_manager._get_python_executable() == "python3"
 
     @patch("worktracker.service.shutil.which")
-    def test_get_worktracker_command_finds_worktracker(self, mock_which, service_manager):
+    def test_get_worktracker_command_finds_worktracker(
+        self, mock_which, service_manager
+    ):
         """Test _get_worktracker_command finds worktracker in PATH."""
-        mock_which.side_effect = lambda cmd: "/usr/bin/worktracker" if cmd == "worktracker" else "/usr/bin/python3"
-        assert service_manager._get_worktracker_command() == "/usr/bin/worktracker update"
+        mock_which.side_effect = (
+            lambda cmd: "/usr/bin/worktracker"
+            if cmd == "worktracker"
+            else "/usr/bin/python3"
+        )
+        assert (
+            service_manager._get_worktracker_command() == "/usr/bin/worktracker update"
+        )
 
     @patch("worktracker.service.shutil.which")
-    def test_get_worktracker_command_falls_back_to_python_module(self, mock_which, service_manager):
+    def test_get_worktracker_command_falls_back_to_python_module(
+        self, mock_which, service_manager
+    ):
         """Test _get_worktracker_command falls back to python -m worktracker."""
-        mock_which.side_effect = lambda cmd: "/usr/bin/python3" if cmd == "python3" else None
-        assert service_manager._get_worktracker_command() == "/usr/bin/python3 -m worktracker update"
+        mock_which.side_effect = (
+            lambda cmd: "/usr/bin/python3" if cmd == "python3" else None
+        )
+        assert (
+            service_manager._get_worktracker_command()
+            == "/usr/bin/python3 -m worktracker update"
+        )
 
     def test_generate_service_unit(self, service_manager):
         """Test generate_service_unit creates correct content."""
-        with patch.object(service_manager, "_get_worktracker_command", return_value="worktracker update"):
+        with patch.object(
+            service_manager,
+            "_get_worktracker_command",
+            return_value="worktracker update",
+        ):
             content = service_manager.generate_service_unit()
 
             assert "[Unit]" in content
-            assert "Description=WorkTracker - Track working time using systemd timer" in content
+            assert (
+                "Description=WorkTracker - Track working time using systemd timer"
+                in content
+            )
             assert "[Service]" in content
             assert "Type=oneshot" in content
             assert "ExecStart=worktracker update" in content
@@ -76,7 +107,10 @@ class TestServiceManager:
         content = service_manager.generate_timer_unit()
 
         assert "[Unit]" in content
-        assert "Description=WorkTracker Timer - Update working time every minute" in content
+        assert (
+            "Description=WorkTracker Timer - Update working time every minute"
+            in content
+        )
         assert f"Requires={service_manager.SERVICE_NAME}" in content
         assert "[Timer]" in content
         assert "OnCalendar=*:0/1" in content
@@ -270,7 +304,9 @@ class TestServiceManager:
     ):
         """Test generate_mqtt_service_unit falls back to python -m."""
         mock_which.return_value = None
-        service_manager._get_python_executable = MagicMock(return_value="/usr/bin/python3")
+        service_manager._get_python_executable = MagicMock(
+            return_value="/usr/bin/python3"
+        )
         content = service_manager.generate_mqtt_service_unit()
         assert "python3 -m worktracker mqtt start" in content
 
@@ -288,7 +324,9 @@ class TestServiceManager:
         service_manager.mqtt_service_path.write_text("[Unit]\nDescription=Test")
         assert service_manager.mqtt_service_path.exists()
         with patch.object(service_manager, "stop_mqtt_service", return_value=True):
-            with patch.object(service_manager, "disable_mqtt_service", return_value=True):
+            with patch.object(
+                service_manager, "disable_mqtt_service", return_value=True
+            ):
                 assert service_manager.uninstall_mqtt_service() is True
         assert not service_manager.mqtt_service_path.exists()
 

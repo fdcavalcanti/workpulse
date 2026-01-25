@@ -141,7 +141,7 @@ class Database:
 
         row = cursor.fetchone()
         total_seconds = float(row["total_seconds"]) if row else 0.0
-        
+
         last_update = None
         if row and row["last_update"]:
             try:

@@ -1,8 +1,8 @@
 """Simple state checker using loginctl to determine if user is active."""
 
+import logging
 import os
 import subprocess
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,15 @@ def is_user_active() -> bool:
 
         # Check session properties: Active and LockedHint
         result = subprocess.run(
-            ["loginctl", "show-session", session_id, "-p", "Active", "-p", "LockedHint"],
+            [
+                "loginctl",
+                "show-session",
+                session_id,
+                "-p",
+                "Active",
+                "-p",
+                "LockedHint",
+            ],
             capture_output=True,
             text=True,
             check=False,

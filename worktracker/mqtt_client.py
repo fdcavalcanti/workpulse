@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
 class MQTTClient:
     """MQTT client for publishing work tracking status updates."""
 
-    def __init__(self, config: MQTTConfig, tracker: Optional[WorkTracker] = None) -> None:
+    def __init__(
+        self, config: MQTTConfig, tracker: Optional[WorkTracker] = None
+    ) -> None:
         """Initialize the MQTT client.
 
         Args:
@@ -59,9 +61,7 @@ class MQTTClient:
 
             # Set credentials if provided
             if self.config.username and self.config.password:
-                self.client.username_pw_set(
-                    self.config.username, self.config.password
-                )
+                self.client.username_pw_set(self.config.username, self.config.password)
 
             logger.info(
                 f"Connecting to MQTT broker at {self.config.broker_ip}:{self.config.port}"
@@ -90,9 +90,7 @@ class MQTTClient:
         else:
             logger.error(f"Failed to connect to MQTT broker, return code: {rc}")
 
-    def _on_disconnect(
-        self, client: mqtt.Client, userdata: None, rc: int
-    ) -> None:
+    def _on_disconnect(self, client: mqtt.Client, userdata: None, rc: int) -> None:
         """Callback for when the client disconnects from the server.
 
         Args:
@@ -136,9 +134,7 @@ class MQTTClient:
             timestamp = datetime.now()
             message = {
                 "last_update": (
-                    today_log.last_update.isoformat()
-                    if today_log.last_update
-                    else None
+                    today_log.last_update.isoformat() if today_log.last_update else None
                 ),
                 "total_time": today_log.total_active_time,
                 "timestamp": timestamp.isoformat(),
@@ -160,7 +156,9 @@ class MQTTClient:
                 )
                 return True
             else:
-                logger.error(f"Failed to publish to MQTT broker, return code: {result.rc}")
+                logger.error(
+                    f"Failed to publish to MQTT broker, return code: {result.rc}"
+                )
                 return False
 
         except Exception as e:

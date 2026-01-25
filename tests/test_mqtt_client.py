@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from worktracker.database import Database
-from worktracker.mqtt_config import MQTTConfig
 from worktracker.mqtt_client import MQTTClient
+from worktracker.mqtt_config import MQTTConfig
 from worktracker.tracker import WorkTracker
 
 
@@ -240,7 +240,9 @@ class TestMQTTClient:
         assert result is False
 
     @patch("worktracker.mqtt_client.mqtt.Client")
-    def test_publish_status_with_last_update(self, mock_client_class, mqtt_client, temp_db):
+    def test_publish_status_with_last_update(
+        self, mock_client_class, mqtt_client, temp_db
+    ):
         """Test publish_status includes last_update when available."""
         # Add time to create a last_update timestamp
         temp_db.increment_daily_time(60.0)

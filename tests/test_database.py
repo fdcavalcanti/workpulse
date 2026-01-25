@@ -111,13 +111,11 @@ class TestDatabase:
         conn = temp_db.connect()
         cursor = conn.cursor()
         today = date.today().isoformat()
-        cursor.execute(
-            "SELECT last_update FROM daily_totals WHERE date = ?", (today,)
-        )
+        cursor.execute("SELECT last_update FROM daily_totals WHERE date = ?", (today,))
         row = cursor.fetchone()
         assert row is not None
         assert row["last_update"] is not None
-        
+
         # Parse timestamp and verify it's within expected range
         last_update = datetime.fromisoformat(row["last_update"])
         assert before <= last_update <= after
@@ -126,30 +124,26 @@ class TestDatabase:
         """Test that subsequent increments update last_update timestamp."""
         # First increment
         temp_db.increment_daily_time(60.0)
-        
+
         # Get first timestamp
         conn = temp_db.connect()
         cursor = conn.cursor()
         today = date.today().isoformat()
-        cursor.execute(
-            "SELECT last_update FROM daily_totals WHERE date = ?", (today,)
-        )
+        cursor.execute("SELECT last_update FROM daily_totals WHERE date = ?", (today,))
         first_update = datetime.fromisoformat(cursor.fetchone()["last_update"])
-        
+
         # Wait a bit to ensure different timestamp
         sleep(0.1)
-        
+
         # Second increment
         before = datetime.now()
         temp_db.increment_daily_time(60.0)
         after = datetime.now()
-        
+
         # Verify last_update was updated
-        cursor.execute(
-            "SELECT last_update FROM daily_totals WHERE date = ?", (today,)
-        )
+        cursor.execute("SELECT last_update FROM daily_totals WHERE date = ?", (today,))
         second_update = datetime.fromisoformat(cursor.fetchone()["last_update"])
-        
+
         assert second_update > first_update
         assert before <= second_update <= after
 

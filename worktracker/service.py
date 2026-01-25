@@ -12,7 +12,7 @@ class ServiceManager:
     TIMER_NAME = "worktracker.timer"
     SERVICE_NAME = "worktracker.service"
     SERVICE_DESCRIPTION = "WorkTracker - Track working time using systemd timer"
-    
+
     MQTT_SERVICE_NAME = "worktracker-mqtt.service"
     MQTT_SERVICE_DESCRIPTION = "WorkTracker MQTT Publisher"
 
@@ -480,4 +480,3 @@ WantedBy=default.target
             return "inactive"
         except Exception:
             return None
-

@@ -119,18 +119,14 @@ class TestDailyLog:
         log_date = date(2024, 1, 1)
         total_time = 3600.0  # 1 hour in seconds
 
-        daily_log = DailyLog(
-            date=log_date, total_active_time=total_time
-        )
+        daily_log = DailyLog(date=log_date, total_active_time=total_time)
 
         assert daily_log.date == log_date
         assert daily_log.total_active_time == total_time
 
     def test_total_active_hours(self):
         """Test converting total active time to hours."""
-        daily_log = DailyLog(
-            date=date(2024, 1, 1), total_active_time=7200.0
-        )  # 2 hours
+        daily_log = DailyLog(date=date(2024, 1, 1), total_active_time=7200.0)  # 2 hours
 
         assert daily_log.total_active_hours == 2.0
 
@@ -169,9 +165,7 @@ class TestDailyLog:
     def test_daily_log_large_time(self):
         """Test daily log with large time values."""
         # 10 hours
-        daily_log = DailyLog(
-            date=date(2024, 1, 1), total_active_time=36000.0
-        )
+        daily_log = DailyLog(date=date(2024, 1, 1), total_active_time=36000.0)
 
         assert daily_log.total_active_hours == 10.0
         assert daily_log.total_active_minutes == 600.0

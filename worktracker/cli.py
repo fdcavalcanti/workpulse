@@ -383,7 +383,6 @@ class WorkTrackerCLI:
         print("Use 'worktracker mqtt status' to check service status.")
         return 0
 
-
     def mqtt_stop(self) -> int:
         """Stop the MQTT publisher service.
 
@@ -554,7 +553,9 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Install command
-    install_parser = subparsers.add_parser("install", help="Install and start worktracker")
+    install_parser = subparsers.add_parser(
+        "install", help="Install and start worktracker"
+    )
 
     # Stop command
     stop_parser = subparsers.add_parser("stop", help="Stop worktracker timer")
@@ -577,19 +578,41 @@ def main() -> int:
 
     # MQTT commands
     mqtt_parser = subparsers.add_parser("mqtt", help="MQTT publisher commands")
-    mqtt_subparsers = mqtt_parser.add_subparsers(dest="mqtt_command", help="MQTT command")
+    mqtt_subparsers = mqtt_parser.add_subparsers(
+        dest="mqtt_command", help="MQTT command"
+    )
 
-    mqtt_install_parser = mqtt_subparsers.add_parser("install", help="Install and set up MQTT publisher service")
-    mqtt_start_parser = mqtt_subparsers.add_parser("start", help="Start MQTT publisher (specify 'local' or 'service')")
-    mqtt_start_subparsers = mqtt_start_parser.add_subparsers(dest="mqtt_start_mode", help="Start mode (required)", required=True)
-    mqtt_start_subparsers.add_parser("local", help="Run MQTT publisher in foreground (local terminal)")
-    mqtt_start_subparsers.add_parser("service", help="Run MQTT publisher as systemd service (background)")
-    
-    mqtt_stop_parser = mqtt_subparsers.add_parser("stop", help="Stop MQTT publisher service")
-    mqtt_uninstall_parser = mqtt_subparsers.add_parser("uninstall", help="Uninstall MQTT publisher service")
-    mqtt_status_parser = mqtt_subparsers.add_parser("status", help="Show MQTT configuration and service status")
-    mqtt_publish_parser = mqtt_subparsers.add_parser("publish", help="Manually publish status (for testing)")
-    mqtt_yaml_parser = mqtt_subparsers.add_parser("yaml", help="Generate Home Assistant YAML configuration")
+    mqtt_install_parser = mqtt_subparsers.add_parser(
+        "install", help="Install and set up MQTT publisher service"
+    )
+    mqtt_start_parser = mqtt_subparsers.add_parser(
+        "start", help="Start MQTT publisher (specify 'local' or 'service')"
+    )
+    mqtt_start_subparsers = mqtt_start_parser.add_subparsers(
+        dest="mqtt_start_mode", help="Start mode (required)", required=True
+    )
+    mqtt_start_subparsers.add_parser(
+        "local", help="Run MQTT publisher in foreground (local terminal)"
+    )
+    mqtt_start_subparsers.add_parser(
+        "service", help="Run MQTT publisher as systemd service (background)"
+    )
+
+    mqtt_stop_parser = mqtt_subparsers.add_parser(
+        "stop", help="Stop MQTT publisher service"
+    )
+    mqtt_uninstall_parser = mqtt_subparsers.add_parser(
+        "uninstall", help="Uninstall MQTT publisher service"
+    )
+    mqtt_status_parser = mqtt_subparsers.add_parser(
+        "status", help="Show MQTT configuration and service status"
+    )
+    mqtt_publish_parser = mqtt_subparsers.add_parser(
+        "publish", help="Manually publish status (for testing)"
+    )
+    mqtt_yaml_parser = mqtt_subparsers.add_parser(
+        "yaml", help="Generate Home Assistant YAML configuration"
+    )
 
     args = parser.parse_args()
 

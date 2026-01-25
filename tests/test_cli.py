@@ -20,7 +20,9 @@ class TestWorkTrackerCLI:
     @patch("worktracker.cli.create_default_config")
     def test_mqtt_install_success(self, mock_create_config, cli, capsys):
         """Test mqtt_install succeeds with all steps."""
-        mock_create_config.return_value = Path("/home/user/.config/worktracker/mqtt.yaml")
+        mock_create_config.return_value = Path(
+            "/home/user/.config/worktracker/mqtt.yaml"
+        )
         cli.service_manager.is_mqtt_service_installed = MagicMock(return_value=False)
         cli.service_manager.install_mqtt_service = MagicMock(return_value=True)
         cli.service_manager.reload_daemon = MagicMock(return_value=True)
@@ -36,12 +38,17 @@ class TestWorkTrackerCLI:
         cli.service_manager.enable_mqtt_service.assert_called_once()
         cli.service_manager.start_mqtt_service.assert_called_once()
         captured = capsys.readouterr()
-        assert "MQTT publisher service has been installed and started successfully" in captured.out
+        assert (
+            "MQTT publisher service has been installed and started successfully"
+            in captured.out
+        )
 
     @patch("worktracker.cli.create_default_config")
     def test_mqtt_install_already_installed(self, mock_create_config, cli, capsys):
         """Test mqtt_install when service is already installed."""
-        mock_create_config.return_value = Path("/home/user/.config/worktracker/mqtt.yaml")
+        mock_create_config.return_value = Path(
+            "/home/user/.config/worktracker/mqtt.yaml"
+        )
         cli.service_manager.is_mqtt_service_installed = MagicMock(return_value=True)
         cli.service_manager.enable_mqtt_service = MagicMock(return_value=True)
         cli.service_manager.start_mqtt_service = MagicMock(return_value=True)
@@ -56,7 +63,9 @@ class TestWorkTrackerCLI:
     @patch("worktracker.cli.create_default_config")
     def test_mqtt_install_install_fails(self, mock_create_config, cli, capsys):
         """Test mqtt_install fails when installation fails."""
-        mock_create_config.return_value = Path("/home/user/.config/worktracker/mqtt.yaml")
+        mock_create_config.return_value = Path(
+            "/home/user/.config/worktracker/mqtt.yaml"
+        )
         cli.service_manager.is_mqtt_service_installed = MagicMock(return_value=False)
         cli.service_manager.install_mqtt_service = MagicMock(return_value=False)
 
@@ -69,7 +78,9 @@ class TestWorkTrackerCLI:
     @patch("worktracker.cli.create_default_config")
     def test_mqtt_install_enable_fails(self, mock_create_config, cli, capsys):
         """Test mqtt_install fails when enabling fails."""
-        mock_create_config.return_value = Path("/home/user/.config/worktracker/mqtt.yaml")
+        mock_create_config.return_value = Path(
+            "/home/user/.config/worktracker/mqtt.yaml"
+        )
         cli.service_manager.is_mqtt_service_installed = MagicMock(return_value=False)
         cli.service_manager.install_mqtt_service = MagicMock(return_value=True)
         cli.service_manager.reload_daemon = MagicMock(return_value=True)
@@ -84,7 +95,9 @@ class TestWorkTrackerCLI:
     @patch("worktracker.cli.create_default_config")
     def test_mqtt_install_start_fails(self, mock_create_config, cli, capsys):
         """Test mqtt_install fails when starting fails."""
-        mock_create_config.return_value = Path("/home/user/.config/worktracker/mqtt.yaml")
+        mock_create_config.return_value = Path(
+            "/home/user/.config/worktracker/mqtt.yaml"
+        )
         cli.service_manager.is_mqtt_service_installed = MagicMock(return_value=False)
         cli.service_manager.install_mqtt_service = MagicMock(return_value=True)
         cli.service_manager.reload_daemon = MagicMock(return_value=True)
@@ -185,7 +198,9 @@ class TestWorkTrackerCLI:
         cli.service_manager.uninstall_mqtt_service.assert_called_once()
         cli.service_manager.reload_daemon.assert_called_once()
         captured = capsys.readouterr()
-        assert "MQTT publisher service has been uninstalled successfully" in captured.out
+        assert (
+            "MQTT publisher service has been uninstalled successfully" in captured.out
+        )
 
     def test_mqtt_uninstall_not_installed(self, cli, capsys):
         """Test mqtt_uninstall when service not installed."""
