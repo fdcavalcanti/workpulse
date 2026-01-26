@@ -286,7 +286,7 @@ WantedBy=timers.target
         python = self._get_python_executable()
         workpulse_cmd = shutil.which("workpulse")
         if workpulse_cmd:
-            mqtt_start_cmd = f"{workpulse_cmd} mqtt start"
+            mqtt_start_cmd = f"{workpulse_cmd} mqtt start local"
         else:
             mqtt_start_cmd = f"{python} -m workpulse mqtt start local"
 
