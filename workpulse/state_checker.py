@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_user_active() -> bool:
-    """Check if the current user is active (not locked, suspended, or hibernated).
+    """Check if the current user is active (not locked, suspended, idle or hibernated).
 
     Uses loginctl to check session state.
 
@@ -49,6 +49,8 @@ def is_user_active() -> bool:
             logger.debug("No session found for current user")
             return False
 
+        logger.debug(f"Session ID: {session_id}")
+
         # Check session properties: Active and LockedHint
         result = subprocess.run(
             [
@@ -59,6 +61,8 @@ def is_user_active() -> bool:
                 "Active",
                 "-p",
                 "LockedHint",
+                "-p",
+                "IdleHint",
             ],
             capture_output=True,
             text=True,
@@ -73,21 +77,24 @@ def is_user_active() -> bool:
         # Parse output
         active = False
         locked = False
+        idle = False
 
         for line in result.stdout.strip().split("\n"):
             if line.startswith("Active="):
                 active = line.split("=", 1)[1].strip() == "yes"
             elif line.startswith("LockedHint="):
                 locked = line.split("=", 1)[1].strip() == "yes"
+            elif line.startswith("IdleHint="):
+                idle = line.split("=", 1)[1].strip() == "yes"
 
         # Check if system is suspended/hibernated
         is_suspended = _is_system_suspended()
 
-        # User is active if: session is active, not locked, and system not suspended
-        user_active = active and not locked and not is_suspended
+        # User is active if: session is active, not locked, not idle and system not suspended
+        user_active = active and not locked and not is_suspended and not idle
 
         logger.debug(
-            f"State check: active={active}, locked={locked}, suspended={is_suspended}, "
+            f"State check: active={active}, locked={locked}, suspended={is_suspended}, idle={idle}, "
             f"result={user_active}"
         )
 
