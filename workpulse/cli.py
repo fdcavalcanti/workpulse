@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from .database import Database
-from .homeassistant import generate_yaml_config
+from .homeassistant import YAMLGenerator
 from .mqtt_client import MQTTClient
 from .mqtt_config import create_default_config, load_config
 from .service import ServiceManager
@@ -526,18 +526,28 @@ class WorkPulseCLI:
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        yaml_config = generate_yaml_config()
+        yaml_config = YAMLGenerator().generate_mqtt_yaml()
+        template_config = YAMLGenerator().generate_template_yaml()
 
         print("Home Assistant YAML Configuration:")
         print("=" * 60)
+        print("Template Sensor Configuration:")
+        print(" - Provides a formatted time sensor to use on dashboard\n")
+        print(template_config)
+        print("=" * 60)
+        print("MQTT Sensor Configuration:")
+        print(
+            " - Connects to WorkPulse MQTT publisher to get working time (required)\n"
+        )
         print(yaml_config)
         print("=" * 60)
         print("\nInstructions:")
-        print("1. Copy the YAML configuration above")
+        print("1. Copy both YAML configurations above")
         print("2. Paste it into your Home Assistant configuration.yaml file")
         print("3. Restart Home Assistant (or reload MQTT integration)")
-        print("4. Ensure WorkPulse MQTT publisher is running: workpulse mqtt start")
-
+        print(
+            "4. Ensure WorkPulse MQTT publisher is running: workpulse mqtt start service"
+        )
         return 0
 
 
