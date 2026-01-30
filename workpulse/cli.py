@@ -1,6 +1,7 @@
 """Command-line interface for workpulse."""
 
 import argparse
+import logging
 import signal
 import sys
 import time
@@ -222,14 +223,6 @@ class WorkPulseCLI:
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
-        # Setup logging
-        import logging
-
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
-
         tracker = WorkTracker()
         try:
             tracker.update_time()
@@ -550,6 +543,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="WorkPulse - Track working time using systemd login information"
     )
+    parser.add_argument(
+        "--log-level",
+        dest="log_level",
+        choices=["debug", "info", "warning", "error", "critical"],
+        default="warning",
+        help="Set the logging level (default: warning)",
+    )
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Install command
@@ -615,6 +615,13 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    # Configure logging according to --log-level
+    numeric_level = getattr(logging, args.log_level.upper(), logging.WARNING)
+    logging.basicConfig(
+        level=numeric_level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     if not args.command:
         parser.print_help()
