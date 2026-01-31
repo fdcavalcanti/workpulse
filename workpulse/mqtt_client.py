@@ -132,12 +132,11 @@ class MQTTClient:
             # Prepare message payload
             timestamp = datetime.now()
             message = {
-                "last_update": (
+                "total_time_last_check": (
                     today_log.last_update.isoformat() if today_log.last_update else None
                 ),
                 "total_time": today_log.total_active_time,
-                "timestamp": timestamp.isoformat(),
-                "date": today_log.date.isoformat(),
+                "last_mqtt_message": timestamp.isoformat(),
             }
 
             # Convert to JSON

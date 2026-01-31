@@ -206,8 +206,8 @@ class TestMQTTClient:
         # Verify payload structure
         message = json.loads(payload)
         assert "total_time" in message
-        assert "date" in message
-        assert "timestamp" in message
+        assert "last_mqtt_message" in message
+        assert "total_time_last_check" in message
         assert message["total_time"] == 3600.0
 
     @patch("workpulse.mqtt_client.mqtt.Client")
@@ -260,9 +260,11 @@ class TestMQTTClient:
         assert result is True
         call_args = mock_client.publish.call_args
         payload = json.loads(call_args[0][1])
-        assert "last_update" in payload
+        assert "total_time_last_check" in payload
         # last_update should be a string (ISO format) or None
-        assert payload["last_update"] is None or isinstance(payload["last_update"], str)
+        assert payload["total_time_last_check"] is None or isinstance(
+            payload["total_time_last_check"], str
+        )
 
     @patch("workpulse.mqtt_client.mqtt.Client")
     def test_publish_status_exception(self, mock_client_class, mqtt_client):
