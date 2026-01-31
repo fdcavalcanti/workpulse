@@ -28,12 +28,24 @@ class YAMLGenerator:
         icon: mdi:clock-outline
         state: >
             {{% set total_seconds = states('{sensor}') | int %}}
-            {{% set hours = (total_seconds // 3600) %}}
-            {{% set minutes = ((total_seconds % 3600) // 60) %}}
-            {{% if hours > 0 %}}
-              {{{{ hours }}}}h {{% if minutes > 0 %}}{{{{ minutes }}}}m{{% endif %}}
+            {{% set last_msg = state_attr('{sensor}', 'total_time_last_check') %}}
+            {{% if last_msg is not none %}}
+                {{% set msg_dt = as_datetime(last_msg) %}}
+                {{% set msg_date = msg_dt.strftime('%Y-%m-%d') %}}
+                {{% set today = now().strftime('%Y-%m-%d') %}}
+                {{% if msg_date == today %}}
+                    {{% set hours = (total_seconds // 3600) %}}
+                    {{% set minutes = ((total_seconds % 3600) // 60) %}}
+                    {{% if hours > 0 %}}
+                        {{{{ hours }}}}h {{% if minutes > 0 %}}{{{{ minutes }}}}m{{% endif %}}
+                    {{% else %}}
+                        {{{{ minutes }}}}m
+                    {{% endif %}}
+                {{% else %}}
+                    0m
+                {{% endif %}}
             {{% else %}}
-              {{{{ minutes }}}}m
+                0m
             {{% endif %}}
     """
         return yaml_template
@@ -62,6 +74,8 @@ class YAMLGenerator:
       unique_id: "workpulse_{self.hostname}_daily_time"
       state_topic: "workpulse/{self.hostname}/status"
       value_template: "{{{{ value_json.total_time | int }}}}"
+      json_attributes_topic: "workpulse/{self.hostname}/status"
+      json_attributes_template: "{{{{ value_json | tojson }}}}"
       icon: "mdi:clock-outline"
       device:
           identifiers:
