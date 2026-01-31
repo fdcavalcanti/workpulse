@@ -10,6 +10,7 @@ class YAMLGenerator:
             self.hostname = socket.gethostname()
         else:
             self.hostname = hostname
+        self.hostname = self.hostname.lower()
         self.name = "WorkPulse Daily Time"
         self.identifier = f"workpulse_{self.hostname}"
 
